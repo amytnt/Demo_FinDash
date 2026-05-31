@@ -3,7 +3,21 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Financial Health Dashboard</title>
+<title>Life Map — Financial Planning</title>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin/>
+<style>
+/* Loading screen — shows instantly before any JS loads */
+#loading-screen{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#fef9f4 0%,#fff5ee 40%,#f8f0e8 100%);transition:opacity 0.4s ease}
+#loading-screen.fade-out{opacity:0;pointer-events:none}
+#loading-screen svg{margin-bottom:20px}
+#loading-screen h2{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;font-size:20px;font-weight:800;color:#1b1b1b;letter-spacing:-0.3px;margin-bottom:6px}
+#loading-screen p{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display',sans-serif;font-size:12px;color:#888}
+.loader-dots{display:flex;gap:6px;margin-top:20px}
+.loader-dots span{width:8px;height:8px;border-radius:50%;background:#005451;opacity:0.3;animation:dotPulse 1.2s infinite}
+.loader-dots span:nth-child(2){animation-delay:0.2s}
+.loader-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes dotPulse{0%,80%,100%{opacity:0.3;transform:scale(0.8)}40%{opacity:1;transform:scale(1.1)}}
+</style>
 <style>
 :root{--teal:#005451;--teal-light:#3d8b87;--teal-bg:#e8f4f3;--red:#c23030;--coral:#B55B64;--dark:#1b1b1b;--grey:#666;--light:#f5f6f7;--bg:#f0f2f5;--card:#fff;--border:#eee;--input-border:#ccc;--gold:#D4A843;--tab-bg:#e0e0e0;--tab-text:#333;--table-border:#eee;--planner-border:#ddd}
 [data-theme="dark"]{--teal:#4db8b3;--teal-light:#6dcfc9;--teal-bg:#1a2f2e;--red:#f06060;--coral:#e07080;--dark:#e8e8e8;--grey:#999;--light:#1e2124;--bg:#0f1114;--card:#1a1d21;--border:#2a2e33;--input-border:#3a3f45;--gold:#f0c060;--tab-bg:#2a2e33;--tab-text:#ccc;--table-border:#2a2e33;--planner-border:#3a3f45}
@@ -11,7 +25,7 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--dark);font-size:13px;line-height:1.5}
 
 /* Summary bar */
-.summary-bar{background:linear-gradient(135deg,#005451,#007a75);color:#fff;padding:12px 16px;display:flex;align-items:center;flex-wrap:wrap;gap:0;box-shadow:0 2px 12px rgba(0,84,81,0.25);border-radius:0 0 12px 12px;transition:padding 0.3s ease,box-shadow 0.3s ease}
+.summary-bar{background:linear-gradient(135deg,#005451,#007a75);color:#fff;padding:16px 20px;display:flex;align-items:center;flex-wrap:wrap;gap:0;box-shadow:0 4px 20px rgba(0,84,81,0.3);border-radius:0;transition:padding 0.3s ease,box-shadow 0.3s ease}
 .summary-bar.bar-mini{padding:3px 10px;box-shadow:0 1px 4px rgba(0,84,81,0.1);border-radius:0 0 6px 6px}
 .summary-bar.bar-mini .summary-item{padding:1px 6px;display:flex;flex-direction:row;align-items:center;gap:4px;text-align:left}
 .summary-bar.bar-mini .sl{font-size:7px;margin-bottom:0}
@@ -22,14 +36,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .summary-item{flex:1 1 0;min-width:100px;text-align:center;padding:6px 8px;border-right:1px solid rgba(255,255,255,0.15);transition:padding 0.3s ease}
 .summary-item:last-of-type{border-right:none}
 .summary-item .sl{font-size:clamp(7px,0.6vw,9px);text-transform:uppercase;letter-spacing:0.5px;opacity:0.7;margin-bottom:2px;white-space:nowrap;transition:font-size 0.3s ease}
-.summary-item .sv{font-size:clamp(14px,1.4vw,20px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:26px;display:flex;align-items:center;justify-content:center;transition:font-size 0.3s ease,min-height 0.3s ease}
+.summary-item .sv{font-size:clamp(18px,1.8vw,28px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:32px;display:flex;align-items:center;justify-content:center;transition:font-size 0.3s ease,min-height 0.3s ease;letter-spacing:-0.5px}
 .summary-item .si-sub{font-size:clamp(7px,0.55vw,9px);opacity:0;line-height:1.2;margin-top:3px;animation:legendFadeIn 0.4s ease forwards}
 @keyframes legendFadeIn{from{opacity:0;transform:translateY(-3px)}to{opacity:0.65;transform:translateY(0)}}
 .summary-help{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0}
 .summary-help:hover{background:rgba(255,255,255,0.25);border-color:rgba(255,255,255,0.7)}
 
 /* Progress */
-.progress-strip{display:flex;gap:6px;align-items:center;padding:10px 16px;background:var(--card);border-radius:10px;margin-bottom:10px;border:1px solid var(--border)}
+.progress-strip{display:flex;gap:8px;align-items:center;padding:12px 20px;background:var(--card);border-radius:14px;margin-bottom:16px;border:1px solid var(--border)}
 .progress-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;border:2px solid var(--border);background:var(--light);transition:all 0.3s}
 .progress-dot.done{background:var(--teal);border-color:var(--teal);color:#fff}
 .progress-dot.active{border-color:var(--teal);color:var(--teal);animation:pulse 1.5s infinite}
@@ -38,20 +52,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,84,81,0.3)}50%{box-shadow:0 0 0 5px rgba(0,84,81,0)}}
 
 /* Layout */
-.app-layout{display:grid;grid-template-columns:380px 1fr;gap:16px;padding:16px;max-width:1600px;margin:0 auto;transition:grid-template-columns 0.35s cubic-bezier(0.4,0,0.2,1)}
-.app-layout.collapsed{grid-template-columns:0px 1fr;gap:0}
-@media(max-width:900px){.app-layout{grid-template-columns:1fr}.app-layout.collapsed{grid-template-columns:1fr}.left-panel{display:none}.left-panel.mobile-open{display:flex}.mobile-toggle{display:flex !important}.summary-bar{padding:8px 10px;border-radius:0}.summary-item{min-width:80px;padding:4px 6px;border-right:none}.summary-item .sv{font-size:14px}.metrics-grid{grid-template-columns:repeat(2,1fr)}}
-.left-panel{display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:calc(100vh - 180px);transition:opacity 0.3s ease,transform 0.35s cubic-bezier(0.4,0,0.2,1);transform-origin:left center}
+.app-layout{display:grid;grid-template-columns:380px 1fr;gap:24px;padding:24px;max-width:1600px;margin:0 auto;transition:grid-template-columns 0.35s cubic-bezier(0.4,0,0.2,1)}
+.app-layout.collapsed{grid-template-columns:52px 1fr;gap:12px}
+@media(max-width:900px){.app-layout{grid-template-columns:1fr}.app-layout.collapsed{grid-template-columns:1fr}.left-panel{display:none}.left-panel.mobile-open{display:flex}.mobile-toggle{display:flex !important}.icon-strip{display:none}.summary-bar{padding:8px 10px;border-radius:0}.summary-item{min-width:80px;padding:4px 6px;border-right:none}.summary-item .sv{font-size:14px}.metrics-grid{grid-template-columns:repeat(2,1fr)}}
+.left-panel{display:flex;flex-direction:column;gap:16px;overflow-y:auto;max-height:calc(100vh - 180px);transition:opacity 0.3s ease,transform 0.35s cubic-bezier(0.4,0,0.2,1);transform-origin:left center}
 .left-panel.panel-hidden{opacity:0;transform:translateX(-20px);pointer-events:none;overflow:hidden;width:0;min-width:0;padding:0;margin:0}
-.right-panel{display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:calc(100vh - 180px)}
-.panel-toggle{position:fixed;left:12px;top:50%;transform:translateY(-50%);z-index:100;width:28px;height:56px;border-radius:0 8px 8px 0;background:var(--card);border:1px solid var(--border);border-left:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--teal);box-shadow:2px 2px 8px rgba(0,0,0,0.08);transition:all 0.2s;opacity:0.7}
-.panel-toggle:hover{opacity:1;width:32px;box-shadow:2px 2px 12px rgba(0,0,0,0.15)}
-.panel-toggle.open{left:392px;border-radius:0 8px 8px 0;transition:left 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.2s}
-.panel-toggle.closed{left:12px;transition:left 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.2s}
+.right-panel{display:flex;flex-direction:column;gap:20px;overflow-y:auto;max-height:calc(100vh - 180px)}
+.panel-toggle{display:none}
+
+/* Icon strip (collapsed sidebar) */
+.icon-strip{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 0;background:var(--card);border-radius:14px;border:1px solid var(--border);position:sticky;top:16px}
+.icon-strip-btn{width:40px;height:40px;border-radius:10px;border:none;background:transparent;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;color:var(--grey);position:relative}
+.icon-strip-btn:hover{background:var(--teal-bg);color:var(--teal);transform:scale(1.1)}
+.icon-strip-btn:active{transform:scale(0.95)}
+.icon-strip-btn.expand-btn{font-size:12px;color:var(--teal);border-top:1px solid var(--border);margin-top:4px;padding-top:4px;width:100%;border-radius:0 0 14px 14px}
+.icon-strip-btn.expand-btn:hover{background:var(--teal-bg)}
+.icon-strip-tooltip{position:absolute;left:48px;top:50%;transform:translateY(-50%);background:var(--dark);color:#fff;font-size:10px;font-weight:600;padding:4px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.15s;z-index:10}
+.icon-strip-btn:hover .icon-strip-tooltip{opacity:1}
 .mobile-toggle{display:none;align-items:center;gap:6px;padding:10px 16px;background:var(--card);margin:0 0 10px;border-radius:10px;border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:600;color:var(--teal)}
 
 /* Card */
-.card{background:var(--card);border-radius:12px;padding:14px 16px;border:1px solid var(--border)}
+.card{background:var(--card);border-radius:16px;padding:20px 22px;border:1px solid var(--border);transition:transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94),box-shadow 0.3s ease}
+.card:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,84,81,0.08)}
 .card-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
 .card-header h3{font-size:12px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.5px;margin:0}
 .card-header .header-right{display:flex;align-items:center;gap:6px}
@@ -95,10 +117,11 @@ label{font-size:11px;color:var(--grey);display:block;margin-bottom:3px}
 .toggle.sm.on::after{left:14px}
 
 /* Metrics */
-.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.metric{text-align:center;padding:12px 8px;background:var(--light);border-radius:10px;position:relative;overflow:hidden}
-.metric-label{font-size:10px;color:var(--grey);text-transform:uppercase;letter-spacing:0.3px}
-.metric-value{font-size:22px;font-weight:700;color:var(--teal);margin:4px 0;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.metric{text-align:center;padding:18px 12px;background:var(--light);border-radius:14px;position:relative;overflow:hidden;transition:transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94),box-shadow 0.3s ease}
+.metric:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,84,81,0.08)}
+.metric-label{font-size:10px;color:var(--grey);text-transform:uppercase;letter-spacing:0.5px}
+.metric-value{font-size:26px;font-weight:800;color:var(--teal);margin:6px 0;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1)}
 .metric-value.counting{transform:scale(1.08);color:var(--gold)}
 .metric-sub{font-size:10px;color:var(--grey)}
 
@@ -107,10 +130,10 @@ label{font-size:11px;color:var(--grey);display:block;margin-bottom:3px}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--table-border)}
 th{font-weight:600;color:var(--grey);font-size:10px;text-transform:uppercase}
-.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:12px;flex-wrap:wrap;position:sticky;top:0;z-index:40;background:var(--bg);padding-top:8px}
-.tab-btn{padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--grey);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s}
-.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
-.tab-btn:hover{color:var(--dark)}
+.tabs{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap;position:sticky;top:0;z-index:40;background:var(--card);padding:6px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);border:1px solid var(--border)}
+.tab-btn{padding:10px 18px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--grey);transition:all 0.25s;border-radius:8px}
+.tab-btn.active{color:var(--teal);background:var(--teal-bg)}
+.tab-btn:hover{color:var(--dark);background:var(--light)}
 
 /* Verdicts */
 .verdict-yes{background:#d4edda;color:#155724;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
@@ -125,7 +148,7 @@ th{font-weight:600;color:var(--grey);font-size:10px;text-transform:uppercase}
 .lang-btn{padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--dark)}
 .lang-btn.active{background:var(--teal);color:#fff;border-color:var(--teal)}
 .header{text-align:center;padding:12px 0}
-.header h1{font-size:20px;font-weight:700;color:var(--teal)}
+.header h1{font-size:20px;font-weight:700;color:var(--dark)}
 .header .subtitle{font-size:12px;color:var(--grey);margin-top:4px}
 .top-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 16px}
 .chart-container{width:100%;height:300px;position:relative}
@@ -134,24 +157,26 @@ th{font-weight:600;color:var(--grey);font-size:10px;text-transform:uppercase}
 .slider-row label{flex:1;margin:0;font-size:11px;color:var(--grey);white-space:nowrap}
 .slider-row input[type="range"]{flex:2}
 .slider-row .slider-val{min-width:42px;text-align:center;font-weight:600;color:var(--teal);font-size:11px;background:var(--teal-bg);padding:2px 6px;border-radius:10px}
-.insight-box{padding:12px;background:var(--light);border-radius:8px;border-left:3px solid var(--teal);margin-bottom:8px}
-.insight-title{font-size:12px;font-weight:700;color:var(--dark);margin-bottom:4px}
-.insight-desc{font-size:11px;color:var(--grey);line-height:1.5}
+.insight-box{padding:16px;background:var(--light);border-radius:12px;border-left:4px solid var(--teal);margin-bottom:12px;transition:transform 0.3s ease,box-shadow 0.3s ease}
+.insight-box:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,84,81,0.06)}
+.insight-title{font-size:13px;font-weight:700;color:var(--dark);margin-bottom:6px}
+.insight-desc{font-size:11px;color:var(--grey);line-height:1.6}
 .planner-item{padding:12px;border:1px solid var(--planner-border);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
 
 /* Premium KPI cards */
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
-.kpi-card{background:var(--card);border-radius:12px;padding:20px 16px;text-align:center;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:transform 0.15s}
-.kpi-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.08)}
-.kpi-card .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--grey);margin-bottom:6px}
-.kpi-card .kpi-value{font-size:26px;font-weight:800;color:var(--teal);line-height:1.2}
-.kpi-card .kpi-sub{font-size:10px;color:var(--grey);margin-top:4px}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--card);border-radius:16px;padding:28px 20px;text-align:center;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,0.04);transition:transform 0.3s cubic-bezier(0.25,0.46,0.45,0.94),box-shadow 0.3s ease}
+.kpi-card:hover{transform:translateY(-5px);box-shadow:0 12px 32px rgba(0,84,81,0.1)}
+.kpi-card .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:0.8px;color:var(--grey);margin-bottom:8px}
+.kpi-card .kpi-value{font-size:32px;font-weight:800;color:var(--teal);line-height:1.2;letter-spacing:-0.5px}
+.kpi-card .kpi-sub{font-size:10px;color:var(--grey);margin-top:6px}
 .health-ring{width:72px;height:72px;margin:0 auto 6px;position:relative}
 .health-ring svg{transform:rotate(-90deg);width:72px;height:72px}
 .health-ring .ring-value{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800}
 .cta-nudge{padding:14px 16px;background:var(--teal-bg);border-radius:10px;border-left:4px solid var(--teal);margin-bottom:16px;display:flex;align-items:center;gap:10px}
 .cta-nudge .cta-text{font-size:12px;color:var(--dark);font-weight:500;line-height:1.4}
-.alert-card{padding:12px 14px;border-radius:10px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px}
+.alert-card{padding:14px 16px;border-radius:12px;margin-bottom:12px;display:flex;align-items:flex-start;gap:12px;transition:transform 0.3s ease,box-shadow 0.3s ease}
+.alert-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.06)}
 .alert-card.green{background:#d4edda;border-left:4px solid #28a745}
 .alert-card.amber{background:#fff3cd;border-left:4px solid #D4A843}
 .alert-card.red{background:#f8d7da;border-left:4px solid #c23030}
@@ -194,13 +219,131 @@ th{font-weight:600;color:var(--grey);font-size:10px;text-transform:uppercase}
 .wizard-btn{padding:10px 28px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:var(--teal);color:#fff;transition:transform 0.1s}
 .wizard-btn:hover{transform:scale(1.02)}
 .wizard-skip{background:none;border:none;color:var(--grey);font-size:11px;cursor:pointer;margin-top:10px}
+.wizard-intro{padding:48px 36px 36px}
+.wizard-intro-slide{transition:all 0.3s ease}
+.wizard-intro-slide.slide-in{opacity:1;transform:translateY(0)}
+.wizard-intro-slide.slide-out{opacity:0;transform:translateY(-12px)}
+@keyframes wizFadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.wizard-intro .wizard-steps{animation:wizFadeUp 0.4s ease 0.2s both}
+
+/* Mobile: phones (max 600px) */
+@media(max-width:600px){
+  body{font-size:12px}
+  .app-layout{padding:12px;gap:12px}
+  .summary-bar{padding:10px 12px;border-radius:0 0 10px 10px;flex-wrap:nowrap;overflow-x:auto;gap:0}
+  .summary-item{min-width:70px;padding:6px 8px}
+  .summary-item .sv{font-size:16px;min-height:22px;letter-spacing:0}
+  .summary-item .sl{font-size:7px}
+  .summary-item .si-sub{display:none}
+  .summary-help{width:18px;height:18px;font-size:9px}
+
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px}
+  .kpi-card{padding:18px 12px;border-radius:14px}
+  .kpi-card .kpi-value{font-size:24px}
+  .kpi-card .kpi-label{font-size:9px}
+
+  .metrics-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .metric{padding:14px 10px;border-radius:12px}
+  .metric-value{font-size:22px}
+
+  .card{padding:14px 14px;border-radius:14px;margin-bottom:4px}
+  .card:hover{transform:none;box-shadow:none}
+  .card:active{transform:scale(0.98);box-shadow:0 2px 8px rgba(0,84,81,0.1)}
+
+  .kpi-card:hover{transform:none;box-shadow:none}
+  .kpi-card:active{transform:scale(0.97);box-shadow:0 4px 16px rgba(0,84,81,0.1)}
+
+  .metric:hover{transform:none;box-shadow:none}
+  .metric:active{transform:scale(0.97)}
+
+  .insight-box:hover{transform:none;box-shadow:none}
+  .alert-card:hover{transform:none;box-shadow:none}
+
+  .tabs{overflow-x:auto;flex-wrap:nowrap;gap:0;padding-top:6px;margin-bottom:14px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab-btn{padding:10px 14px;font-size:11px;white-space:nowrap;min-height:44px;border-radius:4px 4px 0 0}
+
+  .chart-container{height:240px}
+  .bar-container{height:320px}
+
+  .progress-strip{padding:8px 12px;border-radius:10px;margin-bottom:10px}
+  .progress-dot{width:20px;height:20px;font-size:9px}
+
+  .right-panel{gap:14px}
+  .left-panel{gap:12px}
+
+  .input-row{grid-template-columns:1fr;gap:6px}
+  .input-row-3{grid-template-columns:1fr 1fr;gap:6px}
+
+  .btn{min-height:44px;padding:10px 16px;font-size:12px}
+  .toggle{width:40px;height:22px}
+  .toggle::after{width:18px;height:18px}
+  .toggle.on::after{left:20px}
+
+  .wizard-card{padding:24px 20px;border-radius:16px}
+  .wizard-card h2{font-size:18px}
+  .wizard-input{padding:12px 14px;font-size:15px}
+  .wizard-btn{min-height:48px;font-size:14px}
+
+  .header h1{font-size:17px}
+  .header .subtitle{font-size:11px}
+}
+
+/* Small phones (max 400px) */
+@media(max-width:400px){
+  .kpi-row{grid-template-columns:1fr;gap:8px}
+  .kpi-card .kpi-value{font-size:28px}
+
+  .metrics-grid{grid-template-columns:1fr}
+
+  .summary-bar{padding:8px 8px}
+  .summary-item{min-width:60px;padding:4px 6px}
+  .summary-item .sv{font-size:14px}
+
+  .chart-container{height:200px}
+  .bar-container{height:280px}
+
+  .input-row-3{grid-template-columns:1fr}
+
+  .tab-btn{padding:8px 12px;font-size:10px}
+}
+
+/* Touch device: disable hover lift globally */
+@media(hover:none){
+  .card:hover,.kpi-card:hover,.metric:hover,.insight-box:hover,.alert-card:hover{transform:none;box-shadow:none}
+}
+
+/* Scroll reveal animations */
+.reveal{opacity:0;transform:translateY(20px) scale(0.98);transition:opacity 0.6s cubic-bezier(0.25,0.46,0.45,0.94),transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94)}
+.reveal.visible{opacity:1;transform:translateY(0) scale(1)}
+.reveal:nth-child(2){transition-delay:0.08s}
+.reveal:nth-child(3){transition-delay:0.16s}
+.reveal:nth-child(4){transition-delay:0.24s}
+.reveal:nth-child(5){transition-delay:0.32s}
+
+/* Smooth global transitions */
+*{transition-timing-function:cubic-bezier(0.25,0.46,0.45,0.94)}
+button,a,.btn,.tab-btn,.toggle{transition:all 0.25s cubic-bezier(0.25,0.46,0.45,0.94)}
+.tab-btn:hover{transform:translateY(-1px)}
+.btn:hover{transform:translateY(-1px)}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin></script>
 </head>
 <body>
+<div id="loading-screen">
+  <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
+    <circle cx="30" cy="30" r="27" fill="#e8f4f3" stroke="#005451" stroke-width="1.5" opacity="0.6"/>
+    <path d="M12 42 C16 40, 22 34, 28 30 C34 26, 38 28, 42 24 C46 20, 50 17, 52 14" stroke="#005451" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+    <circle cx="52" cy="14" r="4" fill="#B55B64"/>
+    <circle cx="52" cy="14" r="2" fill="#fff"/>
+  </svg>
+  <h2>Life Map</h2>
+  <p>Loading your financial planner...</p>
+  <div class="loader-dots"><span></span><span></span><span></span></div>
+</div>
 <div id="root"></div>
 <script type="text/babel">
 // ============ CONSTANTS ============
@@ -251,7 +394,7 @@ const T={en:{
   mc_success:'Success Rate',mc_conf_age:'80% conf. to age',mc_median_90:'Median liquid @90',mc_worst_10:'Worst 10%',
   l_liquid:'Liquid Assets',l_non_liquid:'Non-Liquid',l_total:'Total Net Worth',l_zero:'Zero line',
   th_age:'Age',th_year:'Year',th_event:'Event',th_nw:'Net Worth',th_liquid:'Liquid',th_earn:'Earn/yr',th_spend:'Spend/yr',th_net:'Net/yr',
-  dark_mode:'Dark',reset:'Reset All',
+  dark_mode:'Dark',reset:'Start Over',
   subtitle:'Couple financial planning · Germany-based model',
   chart_note:'Liquid = investable (stocks+cash+ETF) | Non-liquid = property equity',
   mc_note:'1,000 randomised scenarios. Success = liquid assets > 0 at age 90.',
@@ -259,13 +402,20 @@ const T={en:{
   act_cashflow:'Monthly Cash Flow',act_buckets:'Bucket Allocation',act_this_week:'Action Items',
   th_item:'Item',th_monthly:'Monthly',th_bucket:'Bucket',th_target:'Target',th_purpose:'Purpose',
   planner_note:'Your big life events and their financial impact.',
+  intro_f1_title:'See your future',intro_f1_sub:'Project your net worth, income, and spending decade by decade — watch it all unfold.',
+  intro_f2_title:'Plan life events',intro_f2_sub:'Kids, property, career changes — see how each one shapes your financial trajectory.',
+  intro_f3_title:'Simulate the unexpected',intro_f3_sub:'Monte Carlo runs 1,000 economic scenarios so you know how resilient your plan really is.',
+  intro_f4_title:'Totally private',intro_f4_sub:'Everything runs in your browser. No servers, no accounts, no data leaves your device — ever.',
+  intro_next:'Next',intro_start:"Let's go →",intro_skip:'Skip intro',
   wiz_title:'Let us set up your plan',wiz_sub:'5 quick steps to build your financial picture. Do not worry about exact numbers - you can change everything later.',wiz_skip:'Skip, I will fill in manually',wiz_next:'Next',wiz_done:'Done',
-  wiz_s1:'What are your names?',wiz_s2:'Annual gross income (EUR)?',wiz_s3:'Monthly household spending (EUR)?',wiz_s4:'Total cash savings (EUR)?',wiz_s5:'Planning to have children?',
+  wiz_s0:'Planning solo or with a partner?',wiz_solo:'Just me',wiz_couple:'With a partner',
+  wiz_s1:'What are your names?',wiz_s1_solo:'What is your name?',wiz_s2:'Annual gross income (EUR)?',wiz_s3:'Monthly household spending (EUR)?',wiz_s4:'Total cash savings (EUR)?',wiz_s5:'Planning to have children?',
   wiz_yes:'Yes',wiz_no:'No',wiz_notsure:'Not sure yet',
   progress_complete:'{0}/7 complete',mobile_inputs:'📝 Edit Inputs',
   sb_nw:'Net Worth',sb_surplus:'Monthly Surplus',sb_mc:'Monte Carlo',sb_retire:'Runway',sb_event:'Next Event',
   sb_tip_nw:'Total assets minus debts today',sb_tip_surplus:'Income minus expenses per month',sb_tip_mc:'% of simulations you don\'t run out of money',sb_tip_retire:'Retire age → money lasts until this age',sb_tip_event:'Next major life event in your timeline',
-  header_title:'Money Map 🗺️',header_sub:'Simulate your financial future — tweak the numbers, explore the possibilities',header_disclaimer:'100% private · no data leaves your browser',
+  header_title:'Life Map 🗺️',header_sub:'Your future, one number at a time — tweak, explore, plan ahead',header_disclaimer:'100% private · no data leaves your browser',
+  start_over:'Start over',reset_confirm:'Start fresh? This will clear all your inputs.',
   currency:'Currency',parental_leave:'Parental leave',
   children_tip:'Mutterschutz (14 weeks) is automatic. Below: Elternzeit months per parent (max 36 total per child).',
   kita_berlin_label:'I live in Berlin (free Kita)',kita_cost_label:'Monthly Kita cost',
@@ -425,7 +575,7 @@ const T={en:{
   mc_success:'Erfolgsrate',mc_conf_age:'80% Konfidenz',mc_median_90:'Median @90',mc_worst_10:'Schlechteste 10%',
   l_liquid:'Liquide',l_non_liquid:'Illiquide',l_total:'Gesamt',l_zero:'Nulllinie',
   th_age:'Alter',th_year:'Jahr',th_event:'Ereignis',th_nw:'Vermoegen',th_liquid:'Liquide',th_earn:'Einkommen',th_spend:'Ausgaben',th_net:'Netto',
-  dark_mode:'Dunkel',reset:'Zuruecksetzen',
+  dark_mode:'Dunkel',reset:'Neu starten',
   subtitle:'Finanzplanung für Paare · Deutsches Modell',
   chart_note:'Liquide = investierbar | Illiquide = Immobilienkapital',
   mc_note:'1.000 Simulationen. Erfolg = liquide > 0 mit 90.',
@@ -433,13 +583,20 @@ const T={en:{
   act_cashflow:'Monatlicher Cashflow',act_buckets:'Aufteilung',act_this_week:'Diese Woche',
   th_item:'Posten',th_monthly:'Monatlich',th_bucket:'Topf',th_target:'Ziel',th_purpose:'Zweck',
   planner_note:'Deine grossen Lebensereignisse und deren finanzielle Auswirkung.',
+  intro_f1_title:'Sieh deine Zukunft',intro_f1_sub:'Projiziere dein Vermoegen, Einkommen und Ausgaben Jahrzehnt fuer Jahrzehnt.',
+  intro_f2_title:'Plane Lebensereignisse',intro_f2_sub:'Kinder, Immobilien, Jobwechsel — sieh, wie jedes deine Finanzen beeinflusst.',
+  intro_f3_title:'Simuliere das Unerwartete',intro_f3_sub:'Monte Carlo testet 1.000 Szenarien, damit du weisst, wie robust dein Plan ist.',
+  intro_f4_title:'Voellig privat',intro_f4_sub:'Alles laeuft im Browser. Keine Server, keine Konten, keine Daten verlassen dein Geraet.',
+  intro_next:'Weiter',intro_start:'Los geht\'s →',intro_skip:'Intro ueberspringen',
   wiz_title:'Plan erstellen',wiz_sub:'5 Schritte fuer dein Finanzbild. Keine Sorge — du kannst alles spaeter aendern.',wiz_skip:'Ueberspringen',wiz_next:'Weiter →',wiz_done:'Fertig ✓',
-  wiz_s1:'Wie heisst ihr?',wiz_s2:'Jährliches Bruttoeinkommen (EUR)?',wiz_s3:'Monatliche Haushaltsausgaben (EUR)?',wiz_s4:'Aktuelle Ersparnisse in bar (EUR)?',wiz_s5:'Plant ihr Kinder?',
+  wiz_s0:'Planst du allein oder mit Partner?',wiz_solo:'Nur ich',wiz_couple:'Mit Partner',
+  wiz_s1:'Wie heisst ihr?',wiz_s1_solo:'Wie heisst du?',wiz_s2:'Jährliches Bruttoeinkommen (EUR)?',wiz_s3:'Monatliche Haushaltsausgaben (EUR)?',wiz_s4:'Aktuelle Ersparnisse in bar (EUR)?',wiz_s5:'Plant ihr Kinder?',
   wiz_yes:'Ja',wiz_no:'Nein',wiz_notsure:'Noch unsicher',
   progress_complete:'{0}/7 fertig',mobile_inputs:'📝 Eingaben',
   sb_nw:'Vermoegen',sb_surplus:'Monatl. Ueberschuss',sb_mc:'Monte Carlo',sb_retire:'Laufzeit',sb_event:'Naechstes Ereignis',
   sb_tip_nw:'Gesamtvermoegen minus Schulden',sb_tip_surplus:'Einkommen minus Ausgaben pro Monat',sb_tip_mc:'% der Simulationen ohne Geldmangel',sb_tip_retire:'Rentenalter → Geld reicht bis zu diesem Alter',sb_tip_event:'Naechstes grosses Lebensereignis',
-  header_title:'Money Map 🗺️',header_sub:'Simuliere deine finanzielle Zukunft — spiel mit den Zahlen, entdecke Möglichkeiten',header_disclaimer:'100% privat · keine Daten verlassen deinen Browser',
+  header_title:'Life Map 🗺️',header_sub:'Deine Zukunft, Zahl für Zahl — anpassen, entdecken, vorausplanen',header_disclaimer:'100% privat · keine Daten verlassen deinen Browser',
+  start_over:'Neu starten',reset_confirm:'Neu starten? Alle Eingaben werden gelöscht.',
   currency:'Waehrung',parental_leave:'Elternzeit',
   children_tip:'Mutterschutz (14 Wochen) ist automatisch. Unten: Elternzeit-Monate pro Elternteil (max. 36 pro Kind).',
   kita_berlin_label:'Ich wohne in Berlin (Kita kostenlos)',kita_cost_label:'Monatl. Kita-Kosten',
@@ -594,7 +751,7 @@ const T={en:{
   mc_success:'Tỉ lệ',mc_conf_age:'80% tin cậy',mc_median_90:'Trung vị @90',mc_worst_10:'Xấu nhất 10%',
   l_liquid:'Thanh khoản',l_non_liquid:'BĐS',l_total:'Tổng',l_zero:'Mức 0',
   th_age:'Tuổi',th_year:'Năm',th_event:'Sự kiện',th_nw:'Tài sản',th_liquid:'Thanh khoản',th_earn:'Thu',th_spend:'Chi',th_net:'Ròng',
-  dark_mode:'Tối',reset:'Đặt lại',
+  dark_mode:'Tối',reset:'Làm lại từ đầu',
   subtitle:'Kế hoạch tài chính cho cặp đôi · Mô hình Đức',
   chart_note:'Thanh khoản = đầu tư | BĐS = vốn nhà',
   mc_note:'1.000 mô phỏng. Thành công = thanh khoản > 0 ở tuổi 90.',
@@ -602,13 +759,20 @@ const T={en:{
   act_cashflow:'Dòng tiền hàng tháng',act_buckets:'Phân bổ',act_this_week:'Làm tuần này',
   th_item:'Khoản',th_monthly:'Hàng tháng',th_bucket:'Quỹ',th_target:'Mục tiêu',th_purpose:'Mục đích',
   planner_note:'Các sự kiện lớn và tác động tài chính.',
+  intro_f1_title:'Nhìn thấy tương lai',intro_f1_sub:'Dự đoán tài sản, thu nhập và chi tiêu của bạn qua từng thập kỷ.',
+  intro_f2_title:'Lên kế hoạch sự kiện',intro_f2_sub:'Con cái, nhà cửa, đổi nghề — xem mỗi thứ ảnh hưởng tài chính ra sao.',
+  intro_f3_title:'Mô phỏng bất ngờ',intro_f3_sub:'Monte Carlo chạy 1.000 kịch bản kinh tế để bạn biết kế hoạch bền vững đến đâu.',
+  intro_f4_title:'Hoàn toàn riêng tư',intro_f4_sub:'Mọi thứ chạy trên trình duyệt. Không server, không tài khoản, dữ liệu không rời thiết bị.',
+  intro_next:'Tiếp',intro_start:'Bắt đầu →',intro_skip:'Bỏ qua giới thiệu',
   wiz_title:'Hãy thiết lập kế hoạch',wiz_sub:'5 bước nhanh để xây dựng bức tranh tài chính. Đừng lo — bạn có thể thay đổi sau.',wiz_skip:'Bỏ qua, tự nhập',wiz_next:'Tiếp →',wiz_done:'Xong ✓',
-  wiz_s1:'Tên của bạn và partner?',wiz_s2:'Thu nhập gộp hàng năm (EUR)?',wiz_s3:'Chi tiêu hộ gia đình/tháng (EUR)?',wiz_s4:'Tổng tiền mặt tiết kiệm (EUR)?',wiz_s5:'Có kế hoạch có con không?',
+  wiz_s0:'Bạn lập kế hoạch một mình hay với partner?',wiz_solo:'Chỉ mình tôi',wiz_couple:'Với partner',
+  wiz_s1:'Tên của bạn và partner?',wiz_s1_solo:'Tên của bạn?',wiz_s2:'Thu nhập gộp hàng năm (EUR)?',wiz_s3:'Chi tiêu hộ gia đình/tháng (EUR)?',wiz_s4:'Tổng tiền mặt tiết kiệm (EUR)?',wiz_s5:'Có kế hoạch có con không?',
   wiz_yes:'Có',wiz_no:'Không',wiz_notsure:'Chưa chắc',
   progress_complete:'{0}/7 hoàn tất',mobile_inputs:'📝 Nhập liệu',
   sb_nw:'Tài sản ròng',sb_surplus:'Thặng dư/tháng',sb_mc:'Monte Carlo',sb_retire:'Thời gian',sb_event:'Sự kiện tiếp',
   sb_tip_nw:'Tổng tài sản trừ nợ hiện tại',sb_tip_surplus:'Thu nhập trừ chi tiêu mỗi tháng',sb_tip_mc:'% mô phỏng không hết tiền',sb_tip_retire:'Tuổi hưu → tiền đủ đến tuổi này',sb_tip_event:'Sự kiện lớn tiếp theo trong dòng thời gian',
-  header_title:'Money Map 🗺️',header_sub:'Mô phỏng tương lai tài chính — thử các con số, khám phá khả năng',header_disclaimer:'100% riêng tư · dữ liệu không rời trình duyệt',
+  header_title:'Life Map 🗺️',header_sub:'Tương lai của bạn, từng con số — điều chỉnh, khám phá, lên kế hoạch',header_disclaimer:'100% riêng tư · dữ liệu không rời trình duyệt',
+  start_over:'Bắt đầu lại',reset_confirm:'Bắt đầu lại? Tất cả dữ liệu sẽ bị xóa.',
   currency:'Tiền tệ',parental_leave:'Nghỉ phép cha mẹ',
   children_tip:'Mutterschutz (14 tuần) tự động. Bên dưới: tháng Elternzeit mỗi người (tối đa 36/bé).',
   kita_berlin_label:'Tôi sống ở Berlin (Kita miễn phí)',kita_cost_label:'Chi phí Kita/tháng',
@@ -730,13 +894,13 @@ const T={en:{
 // ============ DEFAULTS ============
 const DEFAULTS={
   name:'',partnerName:'',birthYear:1994,partnerBirthYear:1992,
-  assets:[{id:1,name:'Savings',value:20000,growth:2.5,type:'cash',ccy:'EUR',allocPct:20},{id:2,name:'ETF Portfolio',value:60000,growth:3,type:'etf',ccy:'EUR',allocPct:60}],
-  incomeStreams:[{id:1,label:'Your Salary',monthly:55000,frequency:'annual',startYear:2022,endYear:null,growthPct:3,deTax:true,ccy:'EUR',takesLeave:true},{id:2,label:'Partner Salary',monthly:50000,frequency:'annual',startYear:2020,endYear:null,growthPct:3,deTax:true,ccy:'EUR',takesLeave:false}],
-  baselineSpend:3800,spendInflation:2.5,adHocSpending:[{id:3,label:'Wedding',amount:200000000,startYear:2027,frequency:'one-off',ccy:'VND'}],
-  children:[{id:4,birthYear:2028,leaveMonths1:12,leaveMonths2:2}],berlinKita:true,kitaCost:0,properties:[],
+  assets:[{id:1,name:'Savings',value:50000,growth:2.5,type:'cash',ccy:'EUR',allocPct:20},{id:2,name:'ETF Portfolio',value:35000,growth:4,type:'etf',ccy:'EUR',allocPct:60}],
+  incomeStreams:[{id:1,label:'Your Salary',monthly:65000,frequency:'annual',startYear:2022,endYear:null,growthPct:3,deTax:true,ccy:'EUR',takesLeave:true}],
+  baselineSpend:3000,spendInflation:2.5,adHocSpending:[],
+  children:[],berlinKita:true,kitaCost:0,properties:[],
   retireAge:67,retireAgePartner:67,pensionDrawAge:67,pensionDrawAgePartner:67,
   pensionPeriodsYou:[{id:1,label:'Current job',salary:65000,startYear:2020,endYear:null}],
-  pensionPeriodsPartner:[{id:2,label:'Current job',salary:58000,startYear:2018,endYear:null}],
+  pensionPeriodsPartner:[],
   darkMode:false,lang:'en',wizardDone:false
 };
 
@@ -755,10 +919,11 @@ function NumInput({value,onChange,step,...props}){
   return <div className="num-display" onClick={startEdit} tabIndex={0} onFocus={startEdit}>{value===0?<span style={{color:'var(--grey)'}}>0</span>:fmt(value)}</div>;
 }
 
-function Card({title,emoji,children,defaultOpen=false,onAdd,addLabel,tip}){
+function Card({title,emoji,children,defaultOpen=false,onAdd,addLabel,tip,section,forceOpen}){
   const [open,setOpen]=React.useState(defaultOpen);
+  React.useEffect(()=>{if(forceOpen&&section&&forceOpen===section)setOpen(true);},[forceOpen]);
   return(
-    <div className="card">
+    <div className="card" data-section={section||''}>
       <div className="card-header" onClick={()=>setOpen(!open)}>
         <h3>{emoji} {title}</h3>
         <div className="header-right">
@@ -933,29 +1098,328 @@ function runMC(s,runs=1000){
 }
 
 // ============ WIZARD COMPONENT ============
-function Wizard({onComplete,t}){
+function Wizard({onComplete,t,lang,setLang}){
+  const [phase,setPhase]=React.useState('lang'); // 'lang', 'intro', or 'form'
+  const [introSlide,setIntroSlide]=React.useState(0);
+  const [slideAnim,setSlideAnim]=React.useState('in'); // 'in' or 'out'
   const [step,setStep]=React.useState(0);
-  const [vals,setVals]=React.useState({name:'',partnerName:'',income1:55000,income2:50000,spend:3800,savings:70000,wantKids:'yes'});
+  const [vals,setVals]=React.useState({mode:'solo',name:'',partnerName:'',income1:65000,income2:65000,spend:3000,savings:50000,wantKids:'not sure yet'});
   const up=(k,v)=>setVals({...vals,[k]:v});
-  const next=()=>{if(step<4)setStep(step+1);else onComplete(vals);};
+  const isSolo=vals.mode==='solo';
+  const totalSteps=isSolo?5:5;
+  const next=()=>{if(step<totalSteps-1)setStep(step+1);else onComplete(vals);};
   const kd=e=>{if(e.key==='Enter'){e.preventDefault();next();}};
-  const steps=[
-    <div key={0}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s1')}</p><input className="wizard-input" onKeyDown={kd} placeholder={t('your_name')} value={vals.name} onChange={e=>up('name',e.target.value)}/><input className="wizard-input" onKeyDown={kd} placeholder={t('partner_name')} value={vals.partnerName} onChange={e=>up('partnerName',e.target.value)}/></div>,
-    <div key={1}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s2')}</p><label style={{fontSize:'11px',color:'var(--grey)'}}>👤 {vals.name||t('person1')}</label><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.income1||''} onChange={e=>up('income1',+e.target.value)}/><label style={{fontSize:'11px',color:'var(--grey)',marginTop:6,display:'block'}}>👤 {vals.partnerName||t('person2')}</label><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.income2||''} onChange={e=>up('income2',+e.target.value)}/></div>,
-    <div key={2}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s3')}</p><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.spend||''} onChange={e=>up('spend',+e.target.value)}/></div>,
-    <div key={3}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s4')}</p><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.savings||''} onChange={e=>up('savings',+e.target.value)}/></div>,
-    <div key={4}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s5')}</p><div style={{display:'flex',gap:8,justifyContent:'center'}}>{[['yes',t('wiz_yes')],['no',t('wiz_no')],['not sure yet',t('wiz_notsure')]].map(([k,lbl])=><button key={k} className={'btn '+(vals.wantKids===k?'btn-teal':'btn-outline')} onClick={()=>up('wantKids',k)}>{lbl}</button>)}</div></div>,
+
+  // Intro features
+  const introFeatures=[
+    {title:t('intro_f1_title')||'See your future',sub:t('intro_f1_sub')||'Project your net worth, income, and spending decade by decade.',icon:'projection'},
+    {title:t('intro_f2_title')||'Plan life events',sub:t('intro_f2_sub')||'Kids, property, career changes — see how each shapes your finances.',icon:'planning'},
+    {title:t('intro_f3_title')||'Simulate the unexpected',sub:t('intro_f3_sub')||'Monte Carlo analysis tests 1,000 economic scenarios so you\'re prepared.',icon:'simulate'},
+    {title:t('intro_f4_title')||'Totally private',sub:t('intro_f4_sub')||'Everything runs in your browser. No data is sent anywhere, ever.',icon:'privacy'},
   ];
+
+  const advanceIntro=()=>{
+    if(introSlide<introFeatures.length-1){
+      setSlideAnim('out');
+      setTimeout(()=>{setIntroSlide(introSlide+1);setSlideAnim('in');},300);
+    } else {
+      setSlideAnim('out');
+      setTimeout(()=>setPhase('form'),300);
+    }
+  };
+  const backIntro=()=>{
+    if(introSlide>0){
+      setSlideAnim('out');
+      setTimeout(()=>{setIntroSlide(introSlide-1);setSlideAnim('in');},300);
+    }
+  };
+
+  // SVG illustrations for each intro feature — all heavily animated
+  const IntroIllustration=({icon})=>{
+    const style={width:140,height:140,margin:'0 auto 20px'};
+    if(icon==='projection') return(
+      <svg viewBox="0 0 140 140" fill="none" style={style}>
+        {/* Background pulse */}
+        <circle cx="70" cy="70" r="64" fill="var(--teal-bg)" opacity="0.4">
+          <animate attributeName="r" values="62;66;62" dur="4s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.3;0.5;0.3" dur="4s" repeatCount="indefinite"/>
+        </circle>
+        {/* Grid lines fading in */}
+        <line x1="20" y1="100" x2="120" y2="100" stroke="var(--teal)" strokeWidth="0.5" opacity="0.2"/>
+        <line x1="20" y1="80" x2="120" y2="80" stroke="var(--teal)" strokeWidth="0.5" opacity="0.1"/>
+        <line x1="20" y1="60" x2="120" y2="60" stroke="var(--teal)" strokeWidth="0.5" opacity="0.1"/>
+        {/* Rising bars — animated grow */}
+        <rect x="28" y="80" width="10" height="20" rx="3" fill="var(--teal)" opacity="0.3">
+          <animate attributeName="y" values="100;80;80" dur="1.2s" fill="freeze"/>
+          <animate attributeName="height" values="0;20;20" dur="1.2s" fill="freeze"/>
+        </rect>
+        <rect x="44" y="65" width="10" height="35" rx="3" fill="var(--teal)" opacity="0.45">
+          <animate attributeName="y" values="100;65;65" dur="1.4s" fill="freeze"/>
+          <animate attributeName="height" values="0;35;35" dur="1.4s" fill="freeze"/>
+        </rect>
+        <rect x="60" y="55" width="10" height="45" rx="3" fill="var(--teal)" opacity="0.6">
+          <animate attributeName="y" values="100;55;55" dur="1.6s" fill="freeze"/>
+          <animate attributeName="height" values="0;45;45" dur="1.6s" fill="freeze"/>
+        </rect>
+        <rect x="76" y="42" width="10" height="58" rx="3" fill="var(--teal)" opacity="0.75">
+          <animate attributeName="y" values="100;42;42" dur="1.8s" fill="freeze"/>
+          <animate attributeName="height" values="0;58;58" dur="1.8s" fill="freeze"/>
+        </rect>
+        <rect x="92" y="28" width="10" height="72" rx="3" fill="var(--teal)" opacity="0.9">
+          <animate attributeName="y" values="100;28;28" dur="2s" fill="freeze"/>
+          <animate attributeName="height" values="0;72;72" dur="2s" fill="freeze"/>
+        </rect>
+        {/* Trend line drawn on top */}
+        <path d="M33 80 L49 65 L65 55 L81 42 L97 28" stroke="var(--coral)" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="120" strokeDashoffset="120" fill="none">
+          <animate attributeName="stroke-dashoffset" from="120" to="0" dur="2.2s" fill="freeze"/>
+        </path>
+        {/* Moving dot along trend */}
+        <circle r="5" fill="var(--coral)">
+          <animateMotion dur="3s" repeatCount="indefinite" path="M33,80 L49,65 L65,55 L81,42 L97,28" rotate="auto"/>
+          <animate attributeName="r" values="4;6;4" dur="1.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="2" fill="#fff">
+          <animateMotion dur="3s" repeatCount="indefinite" path="M33,80 L49,65 L65,55 L81,42 L97,28" rotate="auto"/>
+        </circle>
+        {/* Sparkle at top */}
+        <path d="M108 22 L110 27 L115 28 L110 30 L108 35 L106 30 L101 28 L106 27 Z" fill="var(--gold)">
+          <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+          <animateTransform attributeName="transform" type="rotate" values="0 108 28;15 108 28;0 108 28" dur="3s" repeatCount="indefinite"/>
+        </path>
+      </svg>
+    );
+    if(icon==='planning') return(
+      <svg viewBox="0 0 140 140" fill="none" style={style}>
+        {/* Background */}
+        <circle cx="70" cy="70" r="64" fill="var(--teal-bg)" opacity="0.4">
+          <animate attributeName="r" values="62;66;62" dur="4s" repeatCount="indefinite"/>
+        </circle>
+        {/* Winding path */}
+        <path id="lifepath" d="M20 105 C35 100, 40 90, 50 82 C60 74, 62 78, 72 65 C82 52, 85 55, 95 42 C105 29, 110 25, 125 20" stroke="var(--teal)" strokeWidth="2" strokeDasharray="6 4" strokeLinecap="round" fill="none">
+          <animate attributeName="stroke-dashoffset" from="0" to="-20" dur="2s" repeatCount="indefinite"/>
+        </path>
+        {/* Walking person dot */}
+        <circle r="6" fill="var(--teal)">
+          <animateMotion dur="5s" repeatCount="indefinite" path="M20,105 C35,100 40,90 50,82 C60,74 62,78 72,65 C82,52 85,55 95,42 C105,29 110,25 125,20"/>
+        </circle>
+        <circle r="2.5" fill="#fff">
+          <animateMotion dur="5s" repeatCount="indefinite" path="M20,105 C35,100 40,90 50,82 C60,74 62,78 72,65 C82,52 85,55 95,42 C105,29 110,25 125,20"/>
+        </circle>
+        {/* House milestone — bouncing */}
+        <g>
+          <animateTransform attributeName="transform" type="translate" values="0,0;0,-3;0,0" dur="2s" repeatCount="indefinite"/>
+          <rect x="45" y="74" width="12" height="10" rx="2" fill="var(--coral)" opacity="0.8"/>
+          <path d="M43 74 L51 68 L59 74" stroke="var(--coral)" strokeWidth="1.5" fill="none"/>
+          <rect x="49" y="78" width="4" height="6" rx="1" fill="#fff" opacity="0.6"/>
+        </g>
+        {/* Baby milestone — pulsing */}
+        <g>
+          <circle cx="72" cy="60" r="9" fill="var(--teal)" opacity="0.15">
+            <animate attributeName="r" values="8;11;8" dur="2.5s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.1;0.25;0.1" dur="2.5s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="72" cy="60" r="6" fill="var(--teal)" opacity="0.3"/>
+          <text x="72" y="63" textAnchor="middle" fontSize="8">👶</text>
+        </g>
+        {/* Retirement palm — swaying */}
+        <g>
+          <animateTransform attributeName="transform" type="rotate" values="-3 100 40;3 100 40;-3 100 40" dur="3s" repeatCount="indefinite"/>
+          <line x1="100" y1="35" x2="100" y2="48" stroke="#8B6914" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M93 35 Q100 28, 107 35" stroke="var(--teal)" strokeWidth="2" fill="none"/>
+          <path d="M95 32 Q100 26, 105 32" stroke="var(--teal)" strokeWidth="1.5" fill="none" opacity="0.6"/>
+        </g>
+        {/* Goal star — spinning */}
+        <path d="M125 20 L127 25 L132 26 L128 29 L129 34 L125 31 L121 34 L122 29 L118 26 L123 25 Z" fill="var(--gold)">
+          <animateTransform attributeName="transform" type="rotate" values="0 125 27;360 125 27" dur="6s" repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.7;1;0.7" dur="2s" repeatCount="indefinite"/>
+        </path>
+        {/* Start marker */}
+        <circle cx="20" cy="105" r="5" fill="var(--teal)" opacity="0.4">
+          <animate attributeName="r" values="4;6;4" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <text x="20" y="118" textAnchor="middle" fontSize="7" fill="var(--teal)" fontWeight="600" opacity="0.6">NOW</text>
+      </svg>
+    );
+    if(icon==='simulate') return(
+      <svg viewBox="0 0 140 140" fill="none" style={style}>
+        {/* Background */}
+        <circle cx="70" cy="70" r="64" fill="var(--teal-bg)" opacity="0.4">
+          <animate attributeName="r" values="62;66;62" dur="4s" repeatCount="indefinite"/>
+        </circle>
+        {/* Multiple scenario lines — all continuously animated with dash movement */}
+        <path d="M15 100 C30 92, 45 75, 55 68 C65 61, 75 65, 85 52 C95 39, 105 30, 125 22" stroke="var(--teal)" strokeWidth="2.5" strokeLinecap="round" fill="none" strokeDasharray="200" strokeDashoffset="200">
+          <animate attributeName="stroke-dashoffset" from="200" to="0" dur="2s" fill="freeze"/>
+        </path>
+        <path d="M15 102 C32 90, 48 80, 58 75 C68 70, 76 72, 86 62 C96 52, 106 45, 125 38" stroke="var(--teal)" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5" strokeDasharray="180" strokeDashoffset="180">
+          <animate attributeName="stroke-dashoffset" from="180" to="0" dur="2.5s" fill="freeze"/>
+          <animate attributeName="opacity" values="0.3;0.6;0.3" dur="3s" repeatCount="indefinite" begin="2.5s"/>
+        </path>
+        <path d="M15 98 C28 88, 42 72, 52 62 C62 52, 72 55, 82 42 C92 29, 102 22, 125 15" stroke="var(--teal)" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.35" strokeDasharray="180" strokeDashoffset="180">
+          <animate attributeName="stroke-dashoffset" from="180" to="0" dur="2.8s" fill="freeze"/>
+          <animate attributeName="opacity" values="0.2;0.45;0.2" dur="4s" repeatCount="indefinite" begin="2.8s"/>
+        </path>
+        <path d="M15 104 C30 98, 50 88, 60 82 C70 76, 80 78, 90 70 C100 62, 110 58, 125 50" stroke="var(--coral)" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5" strokeDasharray="180" strokeDashoffset="180">
+          <animate attributeName="stroke-dashoffset" from="180" to="0" dur="3s" fill="freeze"/>
+          <animate attributeName="opacity" values="0.3;0.6;0.3" dur="3.5s" repeatCount="indefinite" begin="3s"/>
+        </path>
+        <path d="M15 106 C35 100, 55 95, 65 90 C75 85, 85 82, 95 78 C108 73, 115 70, 125 65" stroke="var(--coral)" strokeWidth="1" strokeLinecap="round" fill="none" opacity="0.3" strokeDasharray="180" strokeDashoffset="180">
+          <animate attributeName="stroke-dashoffset" from="180" to="0" dur="3.2s" fill="freeze"/>
+          <animate attributeName="opacity" values="0.15;0.35;0.15" dur="4.5s" repeatCount="indefinite" begin="3.2s"/>
+        </path>
+        {/* Moving particles along best/worst lines */}
+        <circle r="3" fill="var(--teal)" opacity="0.8">
+          <animateMotion dur="4s" repeatCount="indefinite" path="M15,100 C30,92 45,75 55,68 C65,61 75,65 85,52 C95,39 105,30 125,22"/>
+          <animate attributeName="r" values="2;4;2" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="2.5" fill="var(--coral)" opacity="0.6">
+          <animateMotion dur="5s" repeatCount="indefinite" path="M15,106 C35,100 55,95 65,90 C75,85 85,82 95,78 C108,73 115,70 125,65"/>
+          <animate attributeName="r" values="2;3.5;2" dur="2.5s" repeatCount="indefinite"/>
+        </circle>
+        {/* Dice / randomness indicator — rotating */}
+        <g>
+          <animateTransform attributeName="transform" type="rotate" values="0 70 115;10 70 115;-5 70 115;0 70 115" dur="3s" repeatCount="indefinite"/>
+          <rect x="58" y="108" width="16" height="16" rx="3" fill="var(--teal)" opacity="0.2" stroke="var(--teal)" strokeWidth="1.5"/>
+          <circle cx="63" cy="113" r="1.5" fill="var(--teal)"/>
+          <circle cx="70" cy="116" r="1.5" fill="var(--teal)"/>
+          <circle cx="66" cy="120" r="1.5" fill="var(--teal)"/>
+        </g>
+        {/* "1000x" label pulsing */}
+        <text x="85" y="120" fontSize="9" fill="var(--teal)" fontWeight="800" opacity="0.7">
+          1000x
+          <animate attributeName="opacity" values="0.5;0.9;0.5" dur="2s" repeatCount="indefinite"/>
+        </text>
+      </svg>
+    );
+    if(icon==='privacy') return(
+      <svg viewBox="0 0 140 140" fill="none" style={style}>
+        {/* Background */}
+        <circle cx="70" cy="70" r="64" fill="var(--teal-bg)" opacity="0.4">
+          <animate attributeName="r" values="62;66;62" dur="4s" repeatCount="indefinite"/>
+        </circle>
+        {/* Shield shape */}
+        <path d="M70 25 L100 38 L100 70 C100 92, 85 105, 70 112 C55 105, 40 92, 40 70 L40 38 Z" fill="var(--teal)" opacity="0.08" stroke="var(--teal)" strokeWidth="2">
+          <animate attributeName="opacity" values="0.06;0.12;0.06" dur="3s" repeatCount="indefinite"/>
+        </path>
+        {/* Lock body */}
+        <rect x="55" y="62" width="30" height="24" rx="5" fill="var(--teal)" opacity="0.2" stroke="var(--teal)" strokeWidth="2"/>
+        {/* Lock shackle — animated closing */}
+        <path d="M60 62 L60 52 C60 44, 64 40, 70 40 C76 40, 80 44, 80 52 L80 62" stroke="var(--teal)" strokeWidth="3" strokeLinecap="round" fill="none">
+          <animate attributeName="d" values="M60 62 L60 52 C60 44, 64 40, 70 40 C76 40, 80 44, 80 52 L80 55;M60 62 L60 52 C60 44, 64 40, 70 40 C76 40, 80 44, 80 52 L80 62" dur="1.5s" fill="freeze"/>
+        </path>
+        {/* Keyhole — pulsing */}
+        <circle cx="70" cy="72" r="4" fill="var(--teal)">
+          <animate attributeName="r" values="3.5;5;3.5" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="70" cy="72" r="2" fill="#fff"/>
+        <line x1="70" y1="76" x2="70" y2="81" stroke="var(--teal)" strokeWidth="2.5" strokeLinecap="round"/>
+        {/* Orbiting encryption particles */}
+        <circle r="3" fill="var(--teal)" opacity="0.5">
+          <animateMotion dur="4s" repeatCount="indefinite" path="M70,25 C100,30 105,60 100,70 C95,90 80,105 70,112 C60,105 45,90 40,70 C35,60 40,30 70,25" rotate="auto"/>
+          <animate attributeName="opacity" values="0.3;0.7;0.3" dur="2s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="2.5" fill="var(--coral)" opacity="0.4">
+          <animateMotion dur="5s" repeatCount="indefinite" path="M70,112 C60,105 45,90 40,70 C35,60 40,30 70,25 C100,30 105,60 100,70 C95,90 80,105 70,112" rotate="auto"/>
+          <animate attributeName="opacity" values="0.2;0.5;0.2" dur="2.5s" repeatCount="indefinite"/>
+        </circle>
+        <circle r="2" fill="var(--gold)" opacity="0.4">
+          <animateMotion dur="6s" repeatCount="indefinite" path="M40,70 C35,60 40,30 70,25 C100,30 105,60 100,70 C95,90 80,105 70,112 C60,105 45,90 40,70" rotate="auto"/>
+          <animate attributeName="opacity" values="0.2;0.6;0.2" dur="3s" repeatCount="indefinite"/>
+        </circle>
+        {/* Checkmark appearing */}
+        <path d="M62 95 L68 101 L80 89" stroke="var(--teal)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" strokeDasharray="30" strokeDashoffset="30">
+          <animate attributeName="stroke-dashoffset" from="30" to="0" dur="1s" begin="1.5s" fill="freeze"/>
+        </path>
+        {/* Floating data bits */}
+        <text x="28" y="50" fontSize="7" fill="var(--teal)" opacity="0.4">01
+          <animate attributeName="opacity" values="0;0.4;0" dur="3s" repeatCount="indefinite"/>
+          <animate attributeName="y" values="52;46;52" dur="3s" repeatCount="indefinite"/>
+        </text>
+        <text x="105" y="48" fontSize="6" fill="var(--teal)" opacity="0.3">10
+          <animate attributeName="opacity" values="0;0.35;0" dur="3.5s" repeatCount="indefinite"/>
+          <animate attributeName="y" values="50;44;50" dur="3.5s" repeatCount="indefinite"/>
+        </text>
+        <text x="112" y="80" fontSize="7" fill="var(--coral)" opacity="0.3">01
+          <animate attributeName="opacity" values="0;0.3;0" dur="4s" repeatCount="indefinite"/>
+          <animate attributeName="y" values="82;76;82" dur="4s" repeatCount="indefinite"/>
+        </text>
+      </svg>
+    );
+    return null;
+  };
+
+  const steps=[
+    // Step 0: Solo or Couple
+    <div key={0}><p style={{fontWeight:600,marginBottom:16}}>{t('wiz_s0')}</p><div style={{display:'flex',gap:10,justifyContent:'center'}}><button className={'btn '+(vals.mode==='solo'?'btn-teal':'btn-outline')} style={{padding:'12px 24px',fontSize:'13px'}} onClick={()=>up('mode','solo')}>🙋 {t('wiz_solo')}</button><button className={'btn '+(vals.mode==='couple'?'btn-teal':'btn-outline')} style={{padding:'12px 24px',fontSize:'13px'}} onClick={()=>up('mode','couple')}>👫 {t('wiz_couple')}</button></div></div>,
+    // Step 1: Names
+    <div key={1}><p style={{fontWeight:600,marginBottom:12}}>{isSolo?t('wiz_s1_solo'):t('wiz_s1')}</p><input className="wizard-input" onKeyDown={kd} placeholder={t('your_name')} value={vals.name} onChange={e=>up('name',e.target.value)}/>{!isSolo&&<input className="wizard-input" onKeyDown={kd} placeholder={t('partner_name')} value={vals.partnerName} onChange={e=>up('partnerName',e.target.value)}/>}</div>,
+    // Step 2: Income
+    <div key={2}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s2')}</p><label style={{fontSize:'11px',color:'var(--grey)'}}>👤 {vals.name||t('person1')}</label><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.income1||''} onChange={e=>up('income1',+e.target.value)}/>{!isSolo&&<React.Fragment><label style={{fontSize:'11px',color:'var(--grey)',marginTop:6,display:'block'}}>👤 {vals.partnerName||t('person2')}</label><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.income2||''} onChange={e=>up('income2',+e.target.value)}/></React.Fragment>}</div>,
+    // Step 3: Spending
+    <div key={3}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s3')}</p><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.spend||''} onChange={e=>up('spend',+e.target.value)}/></div>,
+    // Step 4: Savings
+    <div key={4}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s4')}</p><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.savings||''} onChange={e=>up('savings',+e.target.value)}/></div>,
+  ];
+  const back=()=>{if(step>0)setStep(step-1);};
   const finish=()=>{onComplete(vals);};
+
+  // LANGUAGE PHASE
+  if(phase==='lang'){
+    const langs=[{code:'en',label:'English',flag:'🇬🇧'},{code:'de',label:'Deutsch',flag:'🇩🇪'},{code:'vi',label:'Tiếng Việt',flag:'🇻🇳'}];
+    return(
+      <div className="wizard-overlay">
+        <div className="wizard-card wizard-intro">
+          <div className="wizard-intro-slide slide-in">
+            <div style={{fontSize:40,marginBottom:16}}>🌍</div>
+            <h2 style={{fontSize:22,fontWeight:800,marginBottom:8,color:'var(--dark)'}}>Choose your language</h2>
+            <p style={{fontSize:13,color:'var(--grey)',marginBottom:20}}>Wähle deine Sprache · Chọn ngôn ngữ</p>
+            <div style={{display:'flex',flexDirection:'column',gap:8,maxWidth:240,margin:'0 auto'}}>
+              {langs.map(l=>(
+                <button key={l.code} onClick={()=>{setLang(l.code);setTimeout(()=>setPhase('intro'),150);}} className={'btn '+(lang===l.code?'btn-teal':'btn-outline')} style={{padding:'12px 20px',fontSize:'14px',display:'flex',alignItems:'center',gap:10,justifyContent:'center'}}>
+                  <span style={{fontSize:20}}>{l.flag}</span> {l.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // INTRO PHASE
+  if(phase==='intro'){
+    const feat=introFeatures[introSlide];
+    return(
+      <div className="wizard-overlay">
+        <div className="wizard-card wizard-intro">
+          <div className={'wizard-intro-slide '+(slideAnim==='in'?'slide-in':'slide-out')} key={introSlide}>
+            <IntroIllustration icon={feat.icon}/>
+            <h2 style={{fontSize:22,fontWeight:800,marginBottom:8,color:'var(--dark)'}}>{feat.title}</h2>
+            <p style={{fontSize:13,color:'var(--grey)',lineHeight:1.6,maxWidth:320,margin:'0 auto'}}>{feat.sub}</p>
+          </div>
+          <div className="wizard-steps" style={{marginTop:24}}>
+            {introFeatures.map((_,i)=><div key={i} className={'wizard-step'+(i===introSlide?' active':'')}/>)}
+          </div>
+          <div style={{marginTop:20,display:'flex',gap:10,justifyContent:'center',alignItems:'center'}}>
+            {introSlide>0&&<button className="btn btn-outline" style={{padding:'10px 18px',fontSize:'12px'}} onClick={backIntro}>←</button>}
+            <button className="wizard-btn" onClick={advanceIntro}>{introSlide<introFeatures.length-1?(t('intro_next')||'Next'):(t('intro_start')||"Let's go →")}</button>
+          </div>
+          <button className="wizard-skip" onClick={()=>setPhase('form')}>{t('intro_skip')||'Skip intro'}</button>
+        </div>
+      </div>
+    );
+  }
+
+  // FORM PHASE (existing questions)
   return(
     <div className="wizard-overlay" onClick={e=>{if(e.target===e.currentTarget)finish();}}>
       <div className="wizard-card">
         <h2>{t('wiz_title')} 👋</h2>
         <p>{t('wiz_sub')}</p>
-        <div className="wizard-steps">{[0,1,2,3,4].map(i=><div key={i} className={'wizard-step'+(i===step?' active':'')}/>)}</div>
+        <div className="wizard-steps">{Array.from({length:totalSteps}).map((_,i)=><div key={i} className={'wizard-step'+(i===step?' active':'')}/>)}</div>
         {steps[step]}
-        <div style={{marginTop:16}}>
-          {step<4?<button className="wizard-btn" onClick={next}>{t('wiz_next')}</button>:<button className="wizard-btn" onClick={()=>onComplete(vals)}>{t('wiz_done')}</button>}
+        <div style={{marginTop:16,display:'flex',gap:10,justifyContent:'center',alignItems:'center'}}>
+          {step>0&&<button className="btn btn-outline" style={{padding:'10px 20px',fontSize:'13px'}} onClick={back}>← Back</button>}
+          {step<totalSteps-1?<button className="wizard-btn" onClick={next}>{t('wiz_next')}</button>:<button className="wizard-btn" onClick={()=>onComplete(vals)}>{t('wiz_done')}</button>}
         </div>
         <button className="wizard-skip" onClick={finish}>{t('wiz_skip')}</button>
       </div>
@@ -1023,6 +1487,7 @@ function App(){
   const [wizardDone,setWizardDone]=React.useState(g('wizardDone'));
   const [mobileOpen,setMobileOpen]=React.useState(false);
   const [panelOpen,setPanelOpen]=React.useState(true);
+  const [forceOpenSection,setForceOpenSection]=React.useState(null);
   const [barHidden,setBarHidden]=React.useState(false);
   const lastScrollY=React.useRef(0);
   const rightPanelRef=React.useRef(null);
@@ -1112,12 +1577,25 @@ function App(){
 
   // Wizard complete handler
   const handleWizardComplete=(vals)=>{
+    const isSolo=vals.mode==='solo';
     if(vals.name)setName(vals.name);
-    if(vals.partnerName)setPartnerName(vals.partnerName);
-    if(vals.income1)setIncomeStreams(incomeStreams.map((inc,i)=>i===0?{...inc,monthly:vals.income1,deTax:true}:i===1?{...inc,monthly:vals.income2||0,deTax:true}:inc));
+    if(!isSolo&&vals.partnerName)setPartnerName(vals.partnerName);
+    if(isSolo){
+      // Solo: single income stream
+      if(vals.income1)setIncomeStreams([{id:1,label:vals.name?vals.name+'\'s Salary':'My Salary',monthly:vals.income1,frequency:'annual',startYear:2022,endYear:null,growthPct:3,deTax:true,ccy:'EUR',takesLeave:true}]);
+    }else{
+      // Couple: two income streams
+      if(vals.income1)setIncomeStreams([
+        {id:1,label:vals.name?vals.name+'\'s Salary':'Your Salary',monthly:vals.income1,frequency:'annual',startYear:2022,endYear:null,growthPct:3,deTax:true,ccy:'EUR',takesLeave:true},
+        {id:2,label:vals.partnerName?vals.partnerName+'\'s Salary':'Partner Salary',monthly:vals.income2||0,frequency:'annual',startYear:2020,endYear:null,growthPct:3,deTax:true,ccy:'EUR',takesLeave:false}
+      ]);
+    }
     if(vals.spend)setBaselineSpend(vals.spend);
-    if(vals.savings){const totalCur=assets.reduce((s,a)=>s+a.value,0);if(totalCur===0||totalCur===80000){const split=vals.savings;setAssets([{id:1,name:'Savings',value:Math.round(split*0.3),growth:2.5,type:'cash'},{id:2,name:'ETF Portfolio',value:Math.round(split*0.7),growth:8,type:'etf'}]);}}
-    if(vals.wantKids==='yes'&&children.length===0)setChildren([{id:genId(),birthYear:CUR_YR+2,leaveMonths1:12,leaveMonths2:2}]);
+    if(vals.savings){const totalCur=assets.reduce((s,a)=>s+a.value,0);if(totalCur===0||totalCur===85000){const split=vals.savings;setAssets([{id:1,name:'Savings',value:Math.round(split*0.3),growth:2.5,type:'cash'},{id:2,name:'ETF Portfolio',value:Math.round(split*0.7),growth:4,type:'etf'}]);}}
+    // Sync pension salary history with wizard income
+    if(vals.income1)setPensionPeriodsYou([{id:1,label:'Current job',salary:vals.income1,startYear:2020,endYear:null}]);
+    if(!isSolo&&vals.income2)setPensionPeriodsPartner([{id:2,label:'Current job',salary:vals.income2,startYear:2020,endYear:null}]);
+    if(vals.wantKids==='yes'&&children.length===0)setChildren([{id:genId(),birthYear:CUR_YR+2,leaveMonths1:12,leaveMonths2:isSolo?0:2}]);
     setWizardDone(true);
   };
 
@@ -1173,7 +1651,7 @@ function App(){
     chartInst.current=new Chart(chartRef.current.getContext('2d'),{type:'bar',data:{labels:slice.map(d=>d.age),datasets:[
       {label:t('l_liquid'),data:liquidData,backgroundColor:isDark?'rgba(77,184,179,0.8)':'rgba(0,84,81,0.8)',borderRadius:2},
       {label:t('l_non_liquid'),data:propData,backgroundColor:isDark?'rgba(159,120,183,0.7)':'rgba(139,90,163,0.65)',borderRadius:2}
-    ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400,easing:'easeOutQuart'},interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:10},color:isDark?'#ccc':'#333'}},tooltip:{enabled:false,external:externalTooltip},datalabels:false},scales:{x:{stacked:true,title:{display:true,text:t('th_age'),font:{size:10},color:isDark?'#999':'#666'},ticks:{font:{size:9},color:isDark?'#999':'#666'},grid:{display:false}},y:{stacked:true,title:{display:false},ticks:{font:{size:9},color:isDark?'#999':'#666',maxTicksLimit:5,callback:v=>'€'+fmtK(v)},grid:{color:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}}}});
+    ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400,easing:'easeOutQuart'},events:['mousemove','mouseout','touchstart','touchmove'],interaction:{mode:'index',intersect:false,axis:'x'},hover:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:10},color:isDark?'#ccc':'#333'}},tooltip:{enabled:false,external:externalTooltip},datalabels:false},scales:{x:{stacked:true,title:{display:true,text:t('th_age'),font:{size:10},color:isDark?'#999':'#666'},ticks:{font:{size:9},color:isDark?'#999':'#666'},grid:{display:false}},y:{stacked:true,title:{display:false},ticks:{font:{size:9},color:isDark?'#999':'#666',maxTicksLimit:5,callback:v=>'€'+fmtK(v)},grid:{color:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}}}});
     // Draw labels on bars + total on top
     const origDraw=chartInst.current.draw.bind(chartInst.current);
     chartInst.current.draw=function(){
@@ -1264,7 +1742,7 @@ function App(){
       {label:t('ov_sp_children'),data:cats.map(c=>c.child),backgroundColor:'rgba(77,184,179,0.5)',borderRadius:1},
       {label:t('ov_sp_housing'),data:cats.map(c=>c.housing),backgroundColor:dk?'rgba(212,168,67,0.8)':'rgba(212,168,67,0.75)',borderRadius:1},
       {label:t('ov_sp_other'),data:cats.map(c=>c.other),backgroundColor:dk?'rgba(181,91,100,0.8)':'rgba(181,91,100,0.75)',borderRadius:1}
-    ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10},color:dk?'#ccc':'#333'}},tooltip:{enabled:false,external:externalTooltip2}},scales:{x:{stacked:true,title:{display:true,text:t('th_age'),font:{size:10},color:dk?'#999':'#666'},ticks:{font:{size:9},color:dk?'#999':'#666'},grid:{display:false}},y:{stacked:true,ticks:{font:{size:9},color:dk?'#999':'#666',callback:v=>'€'+fmtK(v)},grid:{color:dk?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}}}});
+    ]},options:{responsive:true,maintainAspectRatio:false,events:['mousemove','mouseout','touchstart','touchmove'],interaction:{mode:'index',intersect:false,axis:'x'},hover:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10},color:dk?'#ccc':'#333'}},tooltip:{enabled:false,external:externalTooltip2}},scales:{x:{stacked:true,title:{display:true,text:t('th_age'),font:{size:10},color:dk?'#999':'#666'},ticks:{font:{size:9},color:dk?'#999':'#666'},grid:{display:false}},y:{stacked:true,ticks:{font:{size:9},color:dk?'#999':'#666',callback:v=>'€'+fmtK(v)},grid:{color:dk?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}}}});
     // Draw segment labels inside bars + total on top
     const origDraw2=spendBarInst.current.draw.bind(spendBarInst.current);
     spendBarInst.current.draw=function(){
@@ -1301,7 +1779,7 @@ function App(){
       {label:t('l_non_liquid'),data:data.map(d=>d.nonLiquidAssets),borderColor:'rgba(139,90,163,1)',backgroundColor:'rgba(139,90,163,0.08)',fill:true,tension:0.3,pointRadius:0,borderWidth:1.5}
     ];
     const dk=darkMode;
-    donutInst.current=new Chart(donutRef.current.getContext('2d'),{type:'line',data:{labels:data.map(d=>d.age),datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:10},color:dk?'#ccc':'#333'}},tooltip:{backgroundColor:dk?'rgba(30,33,37,0.96)':'rgba(255,255,255,0.96)',titleColor:dk?'#eee':'#1b1b1b',bodyColor:dk?'#ccc':'#333',borderColor:dk?'#3a3f45':'#eee',borderWidth:1,padding:12,cornerRadius:8,titleFont:{weight:'bold',size:11},bodyFont:{size:10},callbacks:{title:ctx=>t('th_age')+' '+ctx[0].label+' ('+t('th_year')+' '+(birthYear+parseInt(ctx[0].label))+')',label:ctx=>ctx.dataset.label+': €'+fmtK(ctx.raw)}}},scales:{x:{title:{display:true,text:t('th_age'),font:{size:10},color:dk?'#999':'#666'},ticks:{font:{size:9},color:dk?'#999':'#666',maxTicksLimit:15},grid:{display:false}},y:{title:{display:true,text:'EUR',font:{size:10},color:dk?'#999':'#666'},ticks:{font:{size:9},color:dk?'#999':'#666',callback:v=>'€'+fmtK(v)},grid:{color:dk?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}}}});
+    donutInst.current=new Chart(donutRef.current.getContext('2d'),{type:'line',data:{labels:data.map(d=>d.age),datasets},options:{responsive:true,maintainAspectRatio:false,events:['mousemove','mouseout','touchstart','touchmove'],interaction:{mode:'index',intersect:false,axis:'x'},hover:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:10},color:dk?'#ccc':'#333'}},tooltip:{backgroundColor:dk?'rgba(30,33,37,0.96)':'rgba(255,255,255,0.96)',titleColor:dk?'#eee':'#1b1b1b',bodyColor:dk?'#ccc':'#333',borderColor:dk?'#3a3f45':'#eee',borderWidth:1,padding:12,cornerRadius:8,titleFont:{weight:'bold',size:11},bodyFont:{size:10},callbacks:{title:ctx=>t('th_age')+' '+ctx[0].label+' ('+t('th_year')+' '+(birthYear+parseInt(ctx[0].label))+')',label:ctx=>ctx.dataset.label+': €'+fmtK(ctx.raw)}}},scales:{x:{title:{display:true,text:t('th_age'),font:{size:10},color:dk?'#999':'#666'},ticks:{font:{size:9},color:dk?'#999':'#666',maxTicksLimit:15},grid:{display:false}},y:{title:{display:true,text:'EUR',font:{size:10},color:dk?'#999':'#666'},ticks:{font:{size:9},color:dk?'#999':'#666',callback:v=>'€'+fmtK(v)},grid:{color:dk?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}}}});
     return()=>{if(donutInst.current)donutInst.current.destroy();};
   },[data,lang,darkMode,activeTab]);
 
@@ -1499,7 +1977,7 @@ function App(){
       {label:t('th_earn'),data:slice.map(d=>d.totalIncome),backgroundColor:incColor,borderRadius:5,borderSkipped:false},
       {label:t('th_spend'),data:slice.map(d=>-d.totalSpend),backgroundColor:expColor,borderRadius:5,borderSkipped:false},
       {label:t('surplus_label'),data:netData,type:'line',borderColor:dk2?'#D4A843':'#b8860b',backgroundColor:(()=>{const ctx2=barRef.current.getContext('2d');const g=ctx2.createLinearGradient(0,0,0,320);g.addColorStop(0,dk2?'rgba(212,168,67,0.25)':'rgba(184,134,11,0.18)');g.addColorStop(0.5,'rgba(212,168,67,0.05)');g.addColorStop(1,'rgba(224,112,128,0.12)');return g;})(),fill:true,borderWidth:2.5,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:netData.map(v=>v>=0?(dk2?'#D4A843':'#b8860b'):(dk2?'#e07080':'#c23030')),pointBorderColor:netData.map(v=>v>=0?(dk2?'rgba(212,168,67,0.3)':'rgba(184,134,11,0.3)'):(dk2?'rgba(224,112,128,0.3)':'rgba(194,48,48,0.3)')),pointBorderWidth:2,tension:0.35,yAxisID:'y',order:0}
-    ]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:52,bottom:4}},animation:{duration:700,easing:'easeOutQuart',delay:(ctx)=>{if(ctx.type==='data'&&ctx.mode==='default')return ctx.dataIndex*30;return 0;}},interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',align:'center',labels:{boxWidth:10,font:{size:10,weight:'500'},color:dk2?'#ccc':'#444',padding:16,usePointStyle:true,pointStyle:'rectRounded'}},tooltip:{enabled:false,external:externalBarTooltip}},scales:{x:{title:{display:true,text:t('th_age'),font:{size:10,weight:'600'},color:dk2?'#aaa':'#555'},ticks:{font:{size:8,weight:'500'},color:dk2?'#999':'#666',maxRotation:0},grid:{display:false}},y:{ticks:{font:{size:9},color:dk2?'#999':'#666',callback:v=>(v>=0?'':'−')+'€'+fmtK(Math.abs(v))},grid:{color:dk2?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)'}}}},plugins:[zeroLinePlugin,crosshairPlugin,milestonePlugin,yoyPlugin,hoverFadePlugin]});
+    ]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:52,bottom:4}},animation:{duration:700,easing:'easeOutQuart',delay:(ctx)=>{if(ctx.type==='data'&&ctx.mode==='default')return ctx.dataIndex*30;return 0;}},events:['mousemove','mouseout','touchstart','touchmove'],interaction:{mode:'index',intersect:false,axis:'x'},hover:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',align:'center',labels:{boxWidth:10,font:{size:10,weight:'500'},color:dk2?'#ccc':'#444',padding:16,usePointStyle:true,pointStyle:'rectRounded'}},tooltip:{enabled:false,external:externalBarTooltip}},scales:{x:{title:{display:true,text:t('th_age'),font:{size:10,weight:'600'},color:dk2?'#aaa':'#555'},ticks:{font:{size:8,weight:'500'},color:dk2?'#999':'#666',maxRotation:0},grid:{display:false}},y:{ticks:{font:{size:9},color:dk2?'#999':'#666',callback:v=>(v>=0?'':'−')+'€'+fmtK(Math.abs(v))},grid:{color:dk2?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)'}}}},plugins:[zeroLinePlugin,crosshairPlugin,milestonePlugin,yoyPlugin,hoverFadePlugin]});
     return()=>{if(barInst.current)barInst.current.destroy();};
   },[data,activeTab,lang,darkMode]);
 
@@ -1507,11 +1985,36 @@ function App(){
   return(
     <div>
       {/* Wizard */}
-      {!wizardDone && <Wizard onComplete={handleWizardComplete} t={t}/>}
+      {!wizardDone && <Wizard onComplete={handleWizardComplete} t={t} lang={lang} setLang={setLang}/>}
 
-      {/* Sticky Summary Bar — hides on scroll down */}
+      {/* ===== HEADER (compact — title + illustration) ===== */}
+      <div style={{background:darkMode?'var(--card)':'linear-gradient(135deg,#fef9f4 0%,#fff5ee 40%,#f8f0e8 100%)',padding:'16px 24px',borderBottom:'1px solid '+(darkMode?'var(--border)':'rgba(181,91,100,0.1)'),position:'relative'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',maxWidth:1200,margin:'0 auto'}}>
+          <div style={{display:'flex',alignItems:'center',gap:16,minWidth:0,flex:1}}>
+            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{flexShrink:0}}>
+              <circle cx="24" cy="24" r="22" fill="var(--teal-bg)" stroke="var(--teal)" strokeWidth="1" opacity="0.6"/>
+              <path d="M10 34 C14 32, 18 28, 22 25 C26 22, 30 24, 34 20 C37 17, 40 15, 42 12" stroke="var(--teal)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+              <circle cx="42" cy="12" r="3" fill="var(--coral)"/>
+              <circle cx="42" cy="12" r="1.5" fill="#fff"/>
+              <circle cx="22" cy="25" r="2" fill="var(--teal)" opacity="0.4"/>
+              <circle cx="34" cy="20" r="2" fill="var(--teal)" opacity="0.4"/>
+              <path d="M38 8 L39 10 L41 10.5 L39 11 L38 13 L37 11 L35 10.5 L37 10 Z" fill="var(--gold)" opacity="0.8"/>
+            </svg>
+            <div style={{minWidth:0}}>
+              <h1 style={{fontSize:18,fontWeight:800,color:'var(--dark)',letterSpacing:'-0.3px',margin:0,lineHeight:1.3}}>{titleName?titleName+"'s ":''}{t('header_title')}</h1>
+              <p style={{fontSize:11,color:'var(--grey)',margin:0,marginTop:2}}>{t('header_sub')}</p>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
+            {['en','de','vi'].map(l=><span key={l} onClick={()=>setLang(l)} style={{fontSize:10,fontWeight:lang===l?700:400,opacity:lang===l?1:0.5,cursor:'pointer',color:'var(--teal)',letterSpacing:'0.3px'}}>{l.toUpperCase()}</span>)}
+            <span className={'toggle sm'+(darkMode?' on':'')} onClick={()=>setDarkMode(!darkMode)}></span>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== SUMMARY BAR (below header) ===== */}
       <div style={{position:'sticky',top:0,zIndex:50}}>
-        <div className={'summary-bar'+(barHidden?' bar-mini':'')}>
+        <div className={'summary-bar'+((barHidden&&!showLegend)?' bar-mini':'')}>
           <div className="summary-item">
             <div className="sl">{t('sb_nw')}</div>
             <div className="sv" style={{color:'#6ee7b7'}}>€{fmtK(curData.totalNetWorth||0)}</div>
@@ -1539,15 +2042,8 @@ function App(){
           </div>
           <div style={{display:'flex',alignItems:'center',gap:'4px',paddingLeft:6,flexShrink:0}}>
             <div className="summary-help" onClick={()=>setShowLegend(!showLegend)}>?</div>
-            {['en','de','vi'].map(l=><span key={l} onClick={()=>setLang(l)} style={{fontSize:'9px',fontWeight:lang===l?700:400,opacity:lang===l?1:0.5,cursor:'pointer',color:'#fff',letterSpacing:'0.3px'}}>{l.toUpperCase()}</span>)}
-            <span className={'toggle sm'+(darkMode?' on':'')} onClick={()=>setDarkMode(!darkMode)}></span>
           </div>
         </div>
-      </div>
-
-      <div className="header">
-        <h1>{titleName?titleName+"'s":''} {t('header_title')}</h1>
-        <div className="subtitle">{t('header_sub')} · <span style={{opacity:0.7}}>{t('header_disclaimer')}</span></div>
       </div>
 
       {/* Mobile drawer toggle */}
@@ -1557,18 +2053,14 @@ function App(){
         <span>{mobileOpen?'▲':'▼'}</span>
       </div>
 
-      {/* Panel toggle button */}
-      <div className={'panel-toggle'+(panelOpen?' open':' closed')} onClick={()=>setPanelOpen(!panelOpen)} title={panelOpen?'Hide inputs':'Show inputs'}>
-        {panelOpen?'◀':'▶'}
-      </div>
 
       <div className={'app-layout'+(panelOpen?'':' collapsed')}>
-        {/* ===== LEFT PANEL ===== */}
-        <div className={'left-panel'+(mobileOpen?' mobile-open':'')+(panelOpen?'':' panel-hidden')}>
-
+        {/* ===== LEFT PANEL or ICON STRIP ===== */}
+        {panelOpen ? <div className={'left-panel'+(mobileOpen?' mobile-open':'')}>
+          <button onClick={()=>setPanelOpen(false)} style={{position:'sticky',top:0,zIndex:10,alignSelf:'flex-end',background:'var(--card)',border:'1px solid var(--border)',cursor:'pointer',fontSize:'10px',color:'var(--grey)',padding:'4px 10px',borderRadius:20,boxShadow:'0 2px 6px rgba(0,0,0,0.06)'}} title="Collapse">◀ Hide</button>
 
           {/* Personal */}
-          <Card title={t('personal')} emoji="👫" tip={t('tip_personal')} defaultOpen={true}>
+          <Card title={t('personal')} emoji="👫" tip={t('tip_personal')} defaultOpen={true} forceOpen={forceOpenSection} section="personal">
             <div className="input-row">
               <div><label>👤 {t('your_name')}</label><input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Linh"/></div>
               <div><label>👤 {t('partner_name')}</label><input type="text" value={partnerName} onChange={e=>setPartnerName(e.target.value)} placeholder="e.g. Max"/></div>
@@ -1580,7 +2072,7 @@ function App(){
           </Card>
 
           {/* Assets */}
-          <Card title={t('assets')} emoji="🏦" onAdd={addAsset} addLabel={t('add')} tip={t('tip_assets')} defaultOpen={true}>
+          <Card title={t('assets')} emoji="🏦" onAdd={addAsset} addLabel={t('add')} tip={t('tip_assets')} defaultOpen={true} forceOpen={forceOpenSection} section="assets">
             <div style={{fontSize:'9px',color:'var(--grey)',marginBottom:8,padding:'3px 6px',background:'var(--light)',borderRadius:4}}>💱 FX: 1 USD = 0.92 · 1 SGD = 0.69 · 1 VND = 0.000037 EUR</div>
             {assets.map(a=>(
               <div key={a.id} className="dynamic-item">
@@ -1599,7 +2091,7 @@ function App(){
           </Card>
 
           {/* Income */}
-          <Card title={t('income')} emoji="💼" onAdd={addIncome} addLabel={t('add')} tip={t('tip_income')}>
+          <Card title={t('income')} emoji="💼" onAdd={addIncome} addLabel={t('add')} tip={t('tip_income')} forceOpen={forceOpenSection} section="income">
             {incomeStreams.map((inc,idx)=>(
               <div key={inc.id} className="dynamic-item">
                 <button className="remove-btn" onClick={()=>rmIncome(inc.id)}>✕</button>
@@ -1650,7 +2142,7 @@ function App(){
           </Card>
 
           {/* Spending */}
-          <Card title={t('spending')} emoji="🛒" onAdd={addAdHoc} addLabel={t('add')} tip={t('tip_spending')}>
+          <Card title={t('spending')} emoji="🛒" onAdd={addAdHoc} addLabel={t('add')} tip={t('tip_spending')} forceOpen={forceOpenSection} section="spending">
             <div className="input-row" style={{marginBottom:8}}>
               <div><label>{t('spend_baseline')}</label><NumInput value={baselineSpend} onChange={setBaselineSpend}/></div>
               <div><label>{t('spend_inflation')}</label><div className="slider-row"><input type="range" min={0} max={8} step={0.5} value={spendInflation||0} onChange={e=>setSpendInflation(+e.target.value)}/><span className="slider-val">{spendInflation||0}%</span></div></div>
@@ -1672,7 +2164,7 @@ function App(){
           </Card>
 
           {/* Children */}
-          <Card title={t('children')} emoji="👶" onAdd={children.length<3?addChild:null} addLabel={t('add')} tip={t('tip_children')} defaultOpen={children.length>0}>
+          <Card title={t('children')} emoji="👶" onAdd={children.length<3?addChild:null} addLabel={t('add')} tip={t('tip_children')} defaultOpen={children.length>0} forceOpen={forceOpenSection} section="children">
             <div style={{fontSize:'9px',color:'var(--grey)',marginBottom:8,padding:'3px 6px',background:'var(--light)',borderRadius:4}}>{t('children_tip')}</div>
             <div style={{padding:'8px 10px',background:'var(--light)',borderRadius:8,marginBottom:10,border:'1px solid var(--border)'}}>
               <div className="toggle-row" style={{marginBottom:berlinKita?0:6}}>
@@ -1706,7 +2198,7 @@ function App(){
           </Card>
 
           {/* Properties */}
-          <Card title={t('properties')} emoji="🏠" onAdd={addProp} addLabel={t('add')} tip={t('tip_properties')} defaultOpen={properties.length>0}>
+          <Card title={t('properties')} emoji="🏠" onAdd={addProp} addLabel={t('add')} tip={t('tip_properties')} defaultOpen={properties.length>0} forceOpen={forceOpenSection} section="properties">
             {properties.map((p,idx)=>(
               <div key={p.id} className="dynamic-item">
                 <button className="remove-btn" onClick={()=>rmProp(p.id)}>✕</button>
@@ -1735,7 +2227,7 @@ function App(){
           </Card>
 
           {/* Retirement */}
-          <Card title={t('retirement')} emoji="🏖️" tip={t('tip_retirement')}>
+          <Card title={t('retirement')} emoji="🏖️" tip={t('tip_retirement')} forceOpen={forceOpenSection} section="retirement">
             <div style={{marginBottom:12}}>
               <div style={{fontSize:'10px',fontWeight:600,color:'var(--teal)',marginBottom:6,textTransform:'uppercase'}}>{t('retire_age_label')}</div>
               <div className="slider-row"><label>{name||t('you')}</label><input type="range" min={55} max={75} value={retireAge} onChange={e=>setRetireAge(+e.target.value)}/><span className="slider-val">{retireAge}</span></div>
@@ -1785,10 +2277,14 @@ function App(){
             </div>
           </Card>
 
-          <div style={{display:'flex',gap:8,marginTop:8}}>
-            <button className="btn btn-outline" onClick={resetAll}>🔄 {t('reset')}</button>
-          </div>
+          <button className="btn btn-outline btn-sm" onClick={()=>{if(window.confirm(t('reset_confirm')||'Start fresh? This clears all your inputs.')){localStorage.removeItem('fhd_sandbox_v9');window.location.reload();}}} style={{marginTop:20,width:'100%',fontSize:'11px',color:'#999',borderColor:'#ddd',background:'transparent'}}>↺ {t('start_over')||'Start over'}</button>
         </div>
+        : <div className="icon-strip">
+          {[['👫','personal'],['🏦','assets'],['💼','income'],['🛒','spending'],['👶','children'],['🏠','properties'],['🏖️','retirement']].map(([em,sec])=>(
+            <button key={sec} className="icon-strip-btn" onClick={()=>{setForceOpenSection(sec);setPanelOpen(true);setTimeout(()=>{const el=document.querySelector('[data-section="'+sec+'"]');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});setForceOpenSection(null);},400);}}><span>{em}</span><span className="icon-strip-tooltip">{t(sec)}</span></button>
+          ))}
+          <button className="icon-strip-btn expand-btn" onClick={()=>setPanelOpen(true)}>▶<span className="icon-strip-tooltip">Expand</span></button>
+        </div>}
 
         {/* ===== RIGHT PANEL ===== */}
         <div className="right-panel" ref={rightPanelRef}>
@@ -2247,7 +2743,41 @@ function App(){
         </div>
       </div>
       {/* Footer */}
-      <div style={{textAlign:'center',padding:16,borderTop:'1px solid var(--border)',color:'var(--grey)',fontSize:11}}>
+      <div style={{textAlign:'center',padding:'32px 16px 16px',borderTop:'1px solid var(--border)',color:'var(--grey)',fontSize:11,background:darkMode?'var(--card)':'linear-gradient(180deg,#fff,#fef9f4)'}}>
+        <svg width="100%" height="80" viewBox="0 0 400 80" fill="none" preserveAspectRatio="xMidYMid meet" style={{maxWidth:460,margin:'0 auto 16px',display:'block'}}>
+          <line x1="100" y1="68" x2="300" y2="68" stroke="var(--teal)" strokeWidth="1" opacity="0.15"/>
+          <rect x="120" y="10" width="30" height="40" rx="3" fill="none" stroke="var(--teal)" strokeWidth="0.8" opacity="0.15"/>
+          <line x1="135" y1="10" x2="135" y2="50" stroke="var(--teal)" strokeWidth="0.5" opacity="0.1"/>
+          <line x1="120" y1="30" x2="150" y2="30" stroke="var(--teal)" strokeWidth="0.5" opacity="0.1"/>
+          <circle cx="128" cy="20" r="1" fill="var(--gold)" opacity="0.4"><animate attributeName="opacity" values="0.2;0.6;0.2" dur="3s" repeatCount="indefinite"/></circle>
+          <circle cx="142" cy="16" r="0.8" fill="var(--gold)" opacity="0.3"><animate attributeName="opacity" values="0.1;0.5;0.1" dur="4s" repeatCount="indefinite"/></circle>
+          <circle cx="200" cy="35" r="11" fill="#fde8d8"/>
+          <path d="M189 32 C189 24, 194 20, 200 20 C206 20, 211 24, 211 32 C211 28, 207 25, 200 25 C193 25, 189 28, 189 32" fill={darkMode?'#e8e8e8':'#1b1b1b'}/>
+          <path d="M189 32 C188 37, 187 42, 188 45" stroke={darkMode?'#e8e8e8':'#1b1b1b'} strokeWidth="4" strokeLinecap="round"/>
+          <path d="M211 32 C212 37, 213 42, 212 45" stroke={darkMode?'#e8e8e8':'#1b1b1b'} strokeWidth="4" strokeLinecap="round"/>
+          <circle cx="197" cy="35" r="1.2" fill={darkMode?'#333':'#1b1b1b'}/>
+          <circle cx="203" cy="35" r="1.2" fill={darkMode?'#333':'#1b1b1b'}/>
+          <path d="M198 39 Q200 41, 202 39" stroke="var(--coral)" strokeWidth="0.8" fill="none"/>
+          <rect x="190" y="47" width="20" height="18" rx="5" fill="var(--teal)" opacity="0.6"/>
+          <rect x="175" y="58" width="18" height="12" rx="1.5" fill={darkMode?'#2a2e33':'#fff'} stroke="var(--teal)" strokeWidth="1.2"/>
+          <line x1="184" y1="58" x2="184" y2="70" stroke="var(--teal)" strokeWidth="0.6"/>
+          <line x1="177" y1="62" x2="183" y2="62" stroke="var(--teal)" strokeWidth="0.4" opacity="0.4"/>
+          <line x1="177" y1="65" x2="182" y2="65" stroke="var(--teal)" strokeWidth="0.4" opacity="0.4"/>
+          <line x1="177" y1="68" x2="181" y2="68" stroke="var(--teal)" strokeWidth="0.4" opacity="0.4"/>
+          <rect x="220" y="56" width="11" height="12" rx="4" fill="var(--coral)" opacity="0.75"/>
+          <path d="M231 59 C234 59, 234 65, 231 65" stroke="var(--coral)" strokeWidth="1.2" fill="none" opacity="0.75"/>
+          <path d="M224 52 C224 49, 225 47, 225 45" stroke={darkMode?'#666':'#aaa'} strokeWidth="0.8" strokeLinecap="round" opacity="0.3"><animate attributeName="opacity" values="0.15;0.4;0.15" dur="3s" repeatCount="indefinite"/></path>
+          <path d="M227 53 C227 50, 228 48, 228 45" stroke={darkMode?'#666':'#aaa'} strokeWidth="0.6" strokeLinecap="round" opacity="0.25"><animate attributeName="opacity" values="0.1;0.35;0.1" dur="2.5s" repeatCount="indefinite"/></path>
+          <rect x="260" y="55" width="10" height="15" rx="3" fill="var(--teal)" opacity="0.12"/>
+          <path d="M264 55 C264 50, 266 47, 268 44" stroke="var(--teal)" strokeWidth="1.2" fill="none" opacity="0.3"/>
+          <circle cx="268" cy="43" r="3" fill="var(--teal)" opacity="0.15"/>
+          <path d="M266 55 C266 51, 264 48, 262 45" stroke="var(--teal)" strokeWidth="1" fill="none" opacity="0.25"/>
+          <circle cx="262" cy="44" r="2.5" fill="var(--teal)" opacity="0.12"/>
+          <ellipse cx="165" cy="66" rx="8" ry="5" fill={darkMode?'#444':'#1b1b1b'} opacity="0.15"/>
+          <circle cx="160" cy="64" r="3.5" fill={darkMode?'#444':'#1b1b1b'} opacity="0.15"/>
+          <path d="M157 61 L158 58 L160 61" fill={darkMode?'#444':'#1b1b1b'} opacity="0.15"/>
+          <path d="M160 61 L162 58 L163 61" fill={darkMode?'#444':'#1b1b1b'} opacity="0.15"/>
+        </svg>
         {t('ft_made')} <strong style={{color:'var(--teal)'}}>Tu Anh</strong> · {t('ft_feedback')}
         <a href="mailto:tangoctuanh27@gmail.com?subject=Money%20Map%20Feedback&body=Hi%20Tu%20Anh%2C%0A%0A" style={{color:'var(--teal)',textDecoration:'none',marginLeft:4}} title="Email me feedback">✉️</a>
         <a href="https://www.instagram.com/beegeeezz/" target="_blank" style={{color:'var(--teal)',textDecoration:'none',marginLeft:4}} title="DM me on Instagram">📸</a>
@@ -2260,7 +2790,34 @@ function App(){
   );
 }
 
-ReactDOM.render(<App/>, document.getElementById('root'));
+ReactDOM.render(<App/>, document.getElementById('root'), ()=>{
+  const ls=document.getElementById('loading-screen');
+  if(ls){ls.classList.add('fade-out');setTimeout(()=>ls.remove(),500);}
+});
+</script>
+
+<script>
+// Scroll-reveal: observe cards, KPI cards, metrics, insight boxes, alert cards
+function initReveal(){
+  const targets=document.querySelectorAll('.card,.kpi-card,.metric,.insight-box,.alert-card,.kpi-row,.chart-container,.bar-container,.donut-container');
+  targets.forEach(el=>el.classList.add('reveal'));
+  const observer=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        entry.target.classList.add('visible');
+      }
+    });
+  },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+  targets.forEach(el=>observer.observe(el));
+}
+// Run after React renders
+setTimeout(initReveal,500);
+// Also re-run on tab changes (MutationObserver)
+const rootEl=document.getElementById('root');
+if(rootEl){
+  const mo=new MutationObserver(()=>setTimeout(initReveal,100));
+  mo.observe(rootEl,{childList:true,subtree:true});
+}
 </script>
 
 </body>
