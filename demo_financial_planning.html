@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Financial Health Dashboard</title>
+<style>
+:root{--teal:#005451;--teal-light:#3d8b87;--teal-bg:#e8f4f3;--red:#c23030;--coral:#B55B64;--dark:#1b1b1b;--grey:#666;--light:#f5f6f7;--bg:#f0f2f5;--card:#fff;--border:#eee;--input-border:#ccc;--gold:#D4A843;--tab-bg:#e0e0e0;--tab-text:#333;--table-border:#eee;--planner-border:#ddd}
+[data-theme="dark"]{--teal:#4db8b3;--teal-light:#6dcfc9;--teal-bg:#1a2f2e;--red:#f06060;--coral:#e07080;--dark:#e8e8e8;--grey:#999;--light:#1e2124;--bg:#0f1114;--card:#1a1d21;--border:#2a2e33;--input-border:#3a3f45;--gold:#f0c060;--tab-bg:#2a2e33;--tab-text:#ccc;--table-border:#2a2e33;--planner-border:#3a3f45}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--dark);font-size:13px;line-height:1.5}
+
+/* Summary bar */
+.summary-bar{background:linear-gradient(135deg,#005451,#007a75);color:#fff;padding:12px 16px;display:flex;align-items:center;flex-wrap:wrap;gap:0;box-shadow:0 2px 12px rgba(0,84,81,0.25);border-radius:0 0 12px 12px;transition:padding 0.3s ease,box-shadow 0.3s ease}
+.summary-bar.bar-mini{padding:3px 10px;box-shadow:0 1px 4px rgba(0,84,81,0.1);border-radius:0 0 6px 6px}
+.summary-bar.bar-mini .summary-item{padding:1px 6px;display:flex;flex-direction:row;align-items:center;gap:4px;text-align:left}
+.summary-bar.bar-mini .sl{font-size:7px;margin-bottom:0}
+.summary-bar.bar-mini .sv{font-size:11px;min-height:auto}
+.summary-bar.bar-mini .summary-help{width:14px;height:14px;font-size:7px}
+.summary-bar.bar-mini .si-sub{display:none}
+[data-theme="dark"] .summary-bar{background:linear-gradient(135deg,#003d3b,#005451);box-shadow:0 2px 12px rgba(0,0,0,0.4)}
+.summary-item{flex:1 1 0;min-width:100px;text-align:center;padding:6px 8px;border-right:1px solid rgba(255,255,255,0.15);transition:padding 0.3s ease}
+.summary-item:last-of-type{border-right:none}
+.summary-item .sl{font-size:clamp(7px,0.6vw,9px);text-transform:uppercase;letter-spacing:0.5px;opacity:0.7;margin-bottom:2px;white-space:nowrap;transition:font-size 0.3s ease}
+.summary-item .sv{font-size:clamp(14px,1.4vw,20px);font-weight:800;font-variant-numeric:tabular-nums;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:26px;display:flex;align-items:center;justify-content:center;transition:font-size 0.3s ease,min-height 0.3s ease}
+.summary-item .si-sub{font-size:clamp(7px,0.55vw,9px);opacity:0;line-height:1.2;margin-top:3px;animation:legendFadeIn 0.4s ease forwards}
+@keyframes legendFadeIn{from{opacity:0;transform:translateY(-3px)}to{opacity:0.65;transform:translateY(0)}}
+.summary-help{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.1);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0}
+.summary-help:hover{background:rgba(255,255,255,0.25);border-color:rgba(255,255,255,0.7)}
+
+/* Progress */
+.progress-strip{display:flex;gap:6px;align-items:center;padding:10px 16px;background:var(--card);border-radius:10px;margin-bottom:10px;border:1px solid var(--border)}
+.progress-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;border:2px solid var(--border);background:var(--light);transition:all 0.3s}
+.progress-dot.done{background:var(--teal);border-color:var(--teal);color:#fff}
+.progress-dot.active{border-color:var(--teal);color:var(--teal);animation:pulse 1.5s infinite}
+.progress-dot.empty{opacity:0.4}
+.progress-label{font-size:10px;color:var(--grey);margin-left:8px}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,84,81,0.3)}50%{box-shadow:0 0 0 5px rgba(0,84,81,0)}}
+
+/* Layout */
+.app-layout{display:grid;grid-template-columns:380px 1fr;gap:16px;padding:16px;max-width:1600px;margin:0 auto;transition:grid-template-columns 0.35s cubic-bezier(0.4,0,0.2,1)}
+.app-layout.collapsed{grid-template-columns:0px 1fr;gap:0}
+@media(max-width:900px){.app-layout{grid-template-columns:1fr}.app-layout.collapsed{grid-template-columns:1fr}.left-panel{display:none}.left-panel.mobile-open{display:flex}.mobile-toggle{display:flex !important}.summary-bar{padding:8px 10px;border-radius:0}.summary-item{min-width:80px;padding:4px 6px;border-right:none}.summary-item .sv{font-size:14px}.metrics-grid{grid-template-columns:repeat(2,1fr)}}
+.left-panel{display:flex;flex-direction:column;gap:10px;overflow-y:auto;max-height:calc(100vh - 180px);transition:opacity 0.3s ease,transform 0.35s cubic-bezier(0.4,0,0.2,1);transform-origin:left center}
+.left-panel.panel-hidden{opacity:0;transform:translateX(-20px);pointer-events:none;overflow:hidden;width:0;min-width:0;padding:0;margin:0}
+.right-panel{display:flex;flex-direction:column;gap:12px;overflow-y:auto;max-height:calc(100vh - 180px)}
+.panel-toggle{position:fixed;left:12px;top:50%;transform:translateY(-50%);z-index:100;width:28px;height:56px;border-radius:0 8px 8px 0;background:var(--card);border:1px solid var(--border);border-left:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--teal);box-shadow:2px 2px 8px rgba(0,0,0,0.08);transition:all 0.2s;opacity:0.7}
+.panel-toggle:hover{opacity:1;width:32px;box-shadow:2px 2px 12px rgba(0,0,0,0.15)}
+.panel-toggle.open{left:392px;border-radius:0 8px 8px 0;transition:left 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.2s}
+.panel-toggle.closed{left:12px;transition:left 0.35s cubic-bezier(0.4,0,0.2,1),opacity 0.2s}
+.mobile-toggle{display:none;align-items:center;gap:6px;padding:10px 16px;background:var(--card);margin:0 0 10px;border-radius:10px;border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:600;color:var(--teal)}
+
+/* Card */
+.card{background:var(--card);border-radius:12px;padding:14px 16px;border:1px solid var(--border)}
+.card-header{display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none}
+.card-header h3{font-size:12px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:0.5px;margin:0}
+.card-header .header-right{display:flex;align-items:center;gap:6px}
+.card-header .chevron{font-size:11px;color:var(--grey);transition:transform 0.2s}
+.card-header .chevron.open{transform:rotate(180deg)}
+.card-header .add-btn{padding:2px 8px;font-size:10px;font-weight:600;border-radius:4px;border:1px solid var(--teal);color:var(--teal);background:transparent;cursor:pointer;white-space:nowrap}
+.card-header .add-btn:hover{background:var(--teal);color:#fff}
+.card-body{margin-top:12px}
+.card-body.collapsed{display:none}
+.section-tip{font-size:10px;color:var(--grey);margin-bottom:10px;font-style:italic;line-height:1.4}
+
+/* Inputs */
+input[type="text"],input[type="number"],select,.num-display{width:100%;padding:6px 8px;border:1px solid var(--input-border);border-radius:6px;font-size:12px;background:var(--card);color:var(--dark)}
+.num-display{cursor:text;min-height:30px;display:flex;align-items:center}
+input[type="range"]{width:100%;-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;background:var(--border);outline:none;cursor:pointer}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--teal);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);cursor:pointer;transition:transform 0.15s}
+input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+input[type="range"]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--teal);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.2);cursor:pointer}
+input[type="range"]::-moz-range-track{height:6px;border-radius:3px;background:var(--border)}
+label{font-size:11px;color:var(--grey);display:block;margin-bottom:3px}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+.input-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.input-full{margin-bottom:8px}
+
+/* Buttons */
+.btn{padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all 0.15s}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{background:var(--teal-light)}
+.btn-sm{padding:4px 8px;font-size:10px}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--dark)}.btn-outline:hover{background:var(--light)}
+
+/* Dynamic items */
+.dynamic-item{padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;position:relative;background:var(--light)}
+.dynamic-item .remove-btn{position:absolute;top:6px;right:6px;background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;line-height:1}
+.toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.toggle{position:relative;width:36px;height:20px;background:var(--input-border);border-radius:10px;cursor:pointer;transition:background 0.2s}
+.toggle.on{background:var(--teal)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:50%;transition:left 0.2s}
+.toggle.on::after{left:18px}
+.toggle.sm{width:28px;height:16px;border-radius:8px}
+.toggle.sm::after{top:2px;left:2px;width:12px;height:12px}
+.toggle.sm.on::after{left:14px}
+
+/* Metrics */
+.metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.metric{text-align:center;padding:12px 8px;background:var(--light);border-radius:10px;position:relative;overflow:hidden}
+.metric-label{font-size:10px;color:var(--grey);text-transform:uppercase;letter-spacing:0.3px}
+.metric-value{font-size:22px;font-weight:700;color:var(--teal);margin:4px 0;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+.metric-value.counting{transform:scale(1.08);color:var(--gold)}
+.metric-sub{font-size:10px;color:var(--grey)}
+
+
+/* Tables & tabs */
+table{width:100%;border-collapse:collapse;font-size:11px}
+th,td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--table-border)}
+th{font-weight:600;color:var(--grey);font-size:10px;text-transform:uppercase}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:12px;flex-wrap:wrap;position:sticky;top:0;z-index:40;background:var(--bg);padding-top:8px}
+.tab-btn{padding:8px 14px;font-size:11px;font-weight:600;cursor:pointer;border:none;background:none;color:var(--grey);border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s}
+.tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
+.tab-btn:hover{color:var(--dark)}
+
+/* Verdicts */
+.verdict-yes{background:#d4edda;color:#155724;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
+.verdict-maybe{background:#fff3cd;color:#856404;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
+.verdict-no{background:#f8d7da;color:#721c24;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
+[data-theme="dark"] .verdict-yes{background:#1a3d1a;color:#6fdc6f}
+[data-theme="dark"] .verdict-maybe{background:#3d3a1a;color:#f0d060}
+[data-theme="dark"] .verdict-no{background:#3d1a1a;color:#f06060}
+
+/* Misc */
+.lang-selector{display:flex;gap:4px}
+.lang-btn{padding:3px 8px;border-radius:4px;font-size:11px;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--dark)}
+.lang-btn.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.header{text-align:center;padding:12px 0}
+.header h1{font-size:20px;font-weight:700;color:var(--teal)}
+.header .subtitle{font-size:12px;color:var(--grey);margin-top:4px}
+.top-bar{display:flex;justify-content:space-between;align-items:center;padding:8px 16px}
+.chart-container{width:100%;height:300px;position:relative}
+.chart-container canvas{width:100%!important;height:100%!important}
+.slider-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.slider-row label{flex:1;margin:0;font-size:11px;color:var(--grey);white-space:nowrap}
+.slider-row input[type="range"]{flex:2}
+.slider-row .slider-val{min-width:42px;text-align:center;font-weight:600;color:var(--teal);font-size:11px;background:var(--teal-bg);padding:2px 6px;border-radius:10px}
+.insight-box{padding:12px;background:var(--light);border-radius:8px;border-left:3px solid var(--teal);margin-bottom:8px}
+.insight-title{font-size:12px;font-weight:700;color:var(--dark);margin-bottom:4px}
+.insight-desc{font-size:11px;color:var(--grey);line-height:1.5}
+.planner-item{padding:12px;border:1px solid var(--planner-border);border-radius:8px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+
+/* Premium KPI cards */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.kpi-card{background:var(--card);border-radius:12px;padding:20px 16px;text-align:center;border:1px solid var(--border);box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:transform 0.15s}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.kpi-card .kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--grey);margin-bottom:6px}
+.kpi-card .kpi-value{font-size:26px;font-weight:800;color:var(--teal);line-height:1.2}
+.kpi-card .kpi-sub{font-size:10px;color:var(--grey);margin-top:4px}
+.health-ring{width:72px;height:72px;margin:0 auto 6px;position:relative}
+.health-ring svg{transform:rotate(-90deg);width:72px;height:72px}
+.health-ring .ring-value{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800}
+.cta-nudge{padding:14px 16px;background:var(--teal-bg);border-radius:10px;border-left:4px solid var(--teal);margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.cta-nudge .cta-text{font-size:12px;color:var(--dark);font-weight:500;line-height:1.4}
+.alert-card{padding:12px 14px;border-radius:10px;margin-bottom:8px;display:flex;align-items:flex-start;gap:10px}
+.alert-card.green{background:#d4edda;border-left:4px solid #28a745}
+.alert-card.amber{background:#fff3cd;border-left:4px solid #D4A843}
+.alert-card.red{background:#f8d7da;border-left:4px solid #c23030}
+[data-theme="dark"] .alert-card.green{background:#1a3d1a;border-left-color:#6fdc6f}
+[data-theme="dark"] .alert-card.amber{background:#3d3a1a;border-left-color:#f0c060}
+[data-theme="dark"] .alert-card.red{background:#3d1a1a;border-left-color:#f06060}
+.alert-card .alert-icon{font-size:16px;flex-shrink:0;margin-top:1px}
+.alert-card .alert-content{flex:1}
+.alert-card .alert-title{font-size:12px;font-weight:700;margin-bottom:2px;color:var(--dark)}
+.alert-card .alert-desc{font-size:11px;color:var(--grey);line-height:1.4}
+.prop-card{background:var(--light);border-radius:10px;padding:16px;margin-bottom:10px;border:1px solid var(--border)}
+.prop-card .prop-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.prop-card .prop-title{font-size:13px;font-weight:700;color:var(--dark)}
+.prop-card .prop-equity{font-size:20px;font-weight:800;color:var(--teal)}
+.ltv-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:6px 0}
+.ltv-bar .ltv-fill{height:100%;border-radius:4px;transition:width 0.3s}
+.empty-state{text-align:center;padding:40px 20px;color:var(--grey)}
+.empty-state .empty-icon{font-size:40px;margin-bottom:12px;opacity:0.6}
+.empty-state .empty-text{font-size:13px;line-height:1.6}
+.donut-container{width:100%;max-width:220px;height:180px;margin:0 auto}
+.donut-container canvas{width:100%!important;height:100%!important}
+.bar-container{width:100%;height:410px;position:relative}
+.bar-container canvas{width:100%!important;height:100%!important}
+.fire-gauge{display:flex;align-items:center;gap:8px;margin-top:4px}
+.fire-gauge .fire-bar{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.fire-gauge .fire-fill{height:100%;background:var(--teal);border-radius:3px;transition:width 0.4s}
+.fire-gauge .fire-pct{font-size:11px;font-weight:700;color:var(--teal);min-width:36px;text-align:right}
+
+/* Wizard */
+.wizard-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.wizard-card{background:#fff;border-radius:20px;padding:36px;max-width:460px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15)}
+[data-theme="dark"] .wizard-card{background:var(--card)}
+.wizard-card h2{font-size:20px;margin-bottom:8px}
+.wizard-card p{color:var(--grey);margin-bottom:20px;font-size:13px}
+.wizard-steps{display:flex;justify-content:center;gap:6px;margin-bottom:20px}
+.wizard-step{width:8px;height:8px;border-radius:50%;background:var(--border)}
+.wizard-step.active{background:var(--teal);width:20px;border-radius:4px}
+.wizard-input{width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;margin-bottom:10px;outline:none;transition:border 0.2s;background:var(--card);color:var(--dark)}
+.wizard-input:focus{border-color:var(--teal)}
+.wizard-btn{padding:10px 28px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:var(--teal);color:#fff;transition:transform 0.1s}
+.wizard-btn:hover{transform:scale(1.02)}
+.wizard-skip{background:none;border:none;color:var(--grey);font-size:11px;cursor:pointer;margin-top:10px}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+// ============ CONSTANTS ============
+const ELTERNGELD=1800, KINDERGELD=250, DE_TAX_RATE=0.26375, SPARERPAUSCHBETRAG=2000;
+const PENSION_POINT_VALUE=39.32, NATIONAL_AVG=45000, PHI_MO=900, END_AGE=100;
+const STORAGE_KEY='fhd_sandbox_v9', CUR_YR=2026;
+const FX_RATES={EUR:1,USD:0.92,SGD:0.69,VND:0.000037};
+const CURRENCIES=['EUR','USD','SGD','VND'];
+const toEUR=(amount,ccy)=>Math.round((amount||0)*(FX_RATES[ccy]||1));
+
+// ============ TRANSLATIONS ============
+const T={en:{
+  personal:'Personal',assets:'Assets',income:'Income Streams',spending:'Spending',
+  children:'Children',properties:'Property Purchases',retirement:'Retirement & Pension',
+  your_name:'Your Name',partner_name:'Partner Name',your_birth_year:'Birth Year',partner_birth_year:'Birth Year',
+  add:'+ Add',
+  tip_personal:'Enter names and birth years for you and your partner.',
+  tip_assets:'List all current assets. Each gets its own growth rate assumption.',
+  tip_income:'All income sources. Toggle "Taxed in Germany" if this is gross income subject to German tax. Leave off if already net. Toggle "Parental leave" for streams affected by Elternzeit.',
+  tip_spending:'Monthly household baseline + one-off or recurring big expenses.',
+  tip_children:'Each child triggers maternity leave, Elterngeld, Kindergeld, and child costs.',
+  tip_properties:'Current or future properties. Toggle "Already own" for existing mortgages.',
+  tip_retirement:'Set retirement ages and enter salary history for pension calculation.',
+  asset_name:'Name',asset_value:'Value',asset_growth:'Growth %/yr',
+  asset_type:'Type',type_cash:'Cash',type_etf:'ETF',type_stocks:'Stocks',
+  type_bonds:'Bonds',type_property:'Property',type_crypto:'Crypto',type_other:'Other',type_dividends:'Dividends',
+  income_label:'Label',income_monthly:'Net Monthly',income_start:'Start Year',
+  income_end:'End Year',income_growth:'Growth %/yr',income_tax:'Taxed in Germany',
+  spend_baseline:'Monthly Baseline (EUR)',spend_inflation:'Inflation %/yr',
+  spend_label:'Label',spend_amount:'Amount',spend_start:'Start Year',
+  income_amount:'Amount',income_freq:'Frequency',alloc_pct:'Surplus allocation',alloc_summary:'Surplus split',alloc_invested:'invested',alloc_cash:'Cash buffer',
+  surplus_alloc_title:'Monthly Surplus Allocation',surplus_alloc_tip:'After all expenses, how should your monthly cash surplus be split across assets? Remainder goes to cash buffer.',
+  spend_freq:'Frequency',freq_one_off:'One-off',freq_monthly:'Monthly',freq_quarterly:'Quarterly',freq_annual:'Annual',
+  child_birth_year:'Child Birth Year',child_maternity_months:'Maternity Leave (months)',
+  prop_label:'Label',prop_price:'Price (EUR)',prop_age:'Purchase Year',
+  prop_down:'Down %',prop_rate:'Rate %',prop_term:'Term (yrs)',prop_growth:'Growth %/yr',
+  prop_grunderwerb:'Grunderwerbsteuer',prop_notar:'Notar & Grundbuch',prop_makler:'Makler',prop_neben_total:'Nebenkosten total',
+  retire_your_age:'Your Retirement Age',retire_partner_age:'Partner Retirement Age',
+  pension_draw_age:'Pension Draw Age (You)',pension_draw_age_p:'Pension Draw Age (Partner)',
+  pension_periods:'Salary Periods (for pension points)',
+  period_label:'Job / Period',period_salary:'Gross Annual (EUR)',period_start:'From',period_end:'To',
+  pension_tip:'Each period calculates pension points separately. Points = gross salary / national avg (~45k). Change jobs? Add a new period.',
+  calc_points:'Total estimated points: {0} (you) + {1} (partner)',
+  tab_overview:'Overview',tab_projection:'Projection',tab_planner:'Cash Flow',tab_insights:'Insights',tab_action:'Property',
+  h_mc:'Monte Carlo Analysis',h_chart:'Net Worth by Age',h_key_ages:'Key Ages',
+  h_projection:'Year-by-Year Projection',
+  h_planner:'Big-Ticket Life Planner',h_insights:'Insights & Analysis',h_action:'Action Plan',
+  mc_success:'Success Rate',mc_conf_age:'80% conf. to age',mc_median_90:'Median liquid @90',mc_worst_10:'Worst 10%',
+  l_liquid:'Liquid Assets',l_non_liquid:'Non-Liquid',l_total:'Total Net Worth',l_zero:'Zero line',
+  th_age:'Age',th_year:'Year',th_event:'Event',th_nw:'Net Worth',th_liquid:'Liquid',th_earn:'Earn/yr',th_spend:'Spend/yr',th_net:'Net/yr',
+  dark_mode:'Dark',reset:'Reset All',
+  subtitle:'Couple financial planning · Germany-based model',
+  chart_note:'Liquid = investable (stocks+cash+ETF) | Non-liquid = property equity',
+  mc_note:'1,000 randomised scenarios. Success = liquid assets > 0 at age 90.',
+  ins_spend:'Where does your money go?',ins_income:'Where does income come from?',ins_liquid:'Liquid trajectory into retirement',
+  act_cashflow:'Monthly Cash Flow',act_buckets:'Bucket Allocation',act_this_week:'Action Items',
+  th_item:'Item',th_monthly:'Monthly',th_bucket:'Bucket',th_target:'Target',th_purpose:'Purpose',
+  planner_note:'Your big life events and their financial impact.',
+  wiz_title:'Let us set up your plan',wiz_sub:'5 quick steps to build your financial picture. Do not worry about exact numbers - you can change everything later.',wiz_skip:'Skip, I will fill in manually',wiz_next:'Next',wiz_done:'Done',
+  wiz_s1:'What are your names?',wiz_s2:'Annual gross income (EUR)?',wiz_s3:'Monthly household spending (EUR)?',wiz_s4:'Total cash savings (EUR)?',wiz_s5:'Planning to have children?',
+  wiz_yes:'Yes',wiz_no:'No',wiz_notsure:'Not sure yet',
+  progress_complete:'{0}/7 complete',mobile_inputs:'📝 Edit Inputs',
+  sb_nw:'Net Worth',sb_surplus:'Monthly Surplus',sb_mc:'Monte Carlo',sb_retire:'Runway',sb_event:'Next Event',
+  sb_tip_nw:'Total assets minus debts today',sb_tip_surplus:'Income minus expenses per month',sb_tip_mc:'% of simulations you don\'t run out of money',sb_tip_retire:'Retire age → money lasts until this age',sb_tip_event:'Next major life event in your timeline',
+  header_title:'Money Map 🗺️',header_sub:'Simulate your financial future — tweak the numbers, explore the possibilities',header_disclaimer:'100% private · no data leaves your browser',
+  currency:'Currency',parental_leave:'Parental leave',
+  children_tip:'Mutterschutz (14 weeks) is automatic. Below: Elternzeit months per parent (max 36 total per child).',
+  kita_berlin_label:'I live in Berlin (free Kita)',kita_cost_label:'Monthly Kita cost',
+  child_n:'Child',elternzeit_split:'Elternzeit split',max_exceeded:'Total exceeds 36 months max',no_children:'No children added yet',
+  already_own:'Already own (paying mortgage)',years_owned:'Years owned',
+  retire_age_label:'Retirement Age',pension_start_label:'Pension Start Age',salary_history:'Salary History (for pension points)',
+  add_period:'+ Add Period',ongoing:'ongoing',
+  nw_today:'Net Worth Today',tip_mc_success:'Probability your liquid assets stay above €0 until age 90 across 1,000 randomised scenarios',
+  tip_median:'Middle outcome: half of scenarios end above this, half below',tip_worst:'10th percentile: in 90% of scenarios you do better than this',
+  tip_nw_today:'Total net worth now: all assets minus all liabilities',
+  strong:'Strong',moderate:'Moderate',at_risk:'At risk',
+  no_events:'No life events configured yet.',liquid_label:'liquid',liquid_nw_label:'Liquid assets at this age',
+  peak_wealth:'Peak Wealth',at_age_50:'At Age 50',
+  ins_peak:'Peak net worth €{0} at age {1} (year {2})',ins_at50:'Liquid: €{0} · Total: €{1}',
+  ins_income_detail:'Current annual income: €{0} · Spending: €{1} · Savings rate: {2}%',
+  ins_retire_detail:'At retirement (age {0}): liquid €{1} · total €{2}',
+  goes_negative:'Goes negative at age {0}',stays_positive:'Stays positive',
+  baseline_label:'Baseline',children_label:'Children',surplus_label:'Surplus',
+  status_header:'Status',emergency:'Emergency',invest:'Invest',property_bucket:'Property',
+  six_months_exp:'6 months expenses',long_term_growth:'Long-term growth',saving_status:'Saving',down_payment:'Down payment',
+  met:'Met',gap_status:'Gap',ongoing_status:'Ongoing',
+  action_transfer:'Auto-transfer €{0}/mo to investment account',action_emergency:'Top up emergency fund — gap: €{0}',
+  action_elterngeld:'Apply for Elterngeld ~3 months before due date',action_pension_low:'Review pension statement — points ({0}) look low',
+  action_savings_rate:'Increase savings rate or adjust growth assumptions',action_review:'Review assumptions quarterly',
+  act_cf_desc:'Income: €{0}/mo · Spend: €{1}/mo · Surplus: ',
+  you:'You',partner:'Partner',person1:'Person 1',person2:'Person 2',
+  age_prefix:'Age',year_prefix:'Year',
+  // Overview tab
+  ov_chart_title:'Your Wealth Over Time',
+  ov_chart_tip:'Each bar = total net worth at that age. Teal = liquid (cash, ETFs, stocks). Purple = property equity.',
+  ov_spend_chart_title:'Annual Spending by Age — Component Breakdown',
+  ov_spend_chart_tip:'Each bar shows total annual spending at that age, broken into components.',
+  ov_sp_baseline:'Household & Health',ov_sp_children:'Children',ov_sp_housing:'Mortgage / Property',ov_sp_other:'Ad-hoc / Big ticket',
+  ov_takeaway_pos:'Your wealth grows to a peak of €{0} at age {1}, and stays positive through age {2}.',
+  ov_takeaway_neg:'Your liquid assets run out at age {0} ({1} years after retirement). After this point you may need to tap into illiquid assets (e.g. sell or downsize property) to cover expenses.',
+  ov_takeaway_early_neg:'Your liquid assets run out at age {0} (year {1}) — well before retirement! You may need to reduce spending, increase income, or sell/downsize property to stay solvent.',
+  ov_takeaway_illiquid:'By age {0}, your liquid cash can only cover {1} year(s) of spending — the rest is locked in property. You may need to sell/downsize or build more liquid savings before then.',
+  ov_nw_today:'Net Worth Today',ov_success_rate:'Plan Success Rate',ov_money_lasts:'Money Lasts Until',
+  ov_strong:'Strong',ov_moderate:'Moderate',ov_at_risk:'At risk',
+  ov_runway_inf:'∞ runway after retirement',ov_runway_yrs:'{0} yrs after you retire at {1}',ov_lasts_before_retire:'Cash runs out before retirement!',ov_lasts_illiquid:'Cash low — most wealth is in property',
+  ov_explain_title:'What do these numbers mean?',
+  ov_explain_nw:'Everything you own (cash, investments, property equity) minus everything you owe (mortgages, loans). The line below shows how much your net worth is growing or shrinking per year.',
+  ov_explain_mc:'We simulate 1,000 possible futures with random market returns (good years and bad years). This percentage shows how many of those futures end with you still having money at age 90. Above 80% = strong.',
+  ov_explain_mc_link:'Learn more about Monte Carlo simulation →',
+  ov_explain_lasts:'Based on your current savings, income, and spending trajectory: the age at which your investable assets would hit €0. "Age 100+" means you never run out in our projection.',
+  ov_hnwi:'HNWI Status',ov_millionaire:'Millionaire',
+  ov_hnwi_age:'Age {0}',ov_hnwi_never:'Not reached',ov_hnwi_already:'Already!',
+  ov_explain_hnwi:'High-Net-Worth Individual = liquid assets (cash + investments, excluding property) exceed €1M after liabilities. This is the age you first cross that threshold in our projection.',
+  ov_explain_mill:'Millionaire = total net worth (all assets including property equity, minus debts) exceeds €1M. This is the age you first cross that threshold.',
+  ov_nw_sub_grow:'Growing €{0}/yr',ov_nw_sub_shrink:'Shrinking €{0}/yr',
+  ov_nudge_mc:'Your plan succeeds in only {0}% of 1,000 simulated futures. Actions: increase savings rate, delay retirement by 2-3 years, or shift cash into higher-growth assets.',
+  ov_nudge_cash:'Cash drag: €{0} ({1}% of investable assets) earning minimal returns. Move excess above 6-month emergency buffer into ETFs.',
+  ov_nudge_runway:'Post-retirement runway is only {0} years. Target 25+ years to be safe. Try: save €{1} more per month, or push retirement age by 2 years.',
+  ov_nudge_healthy:'Your finances look healthy. Keep reviewing quarterly and rebalance if any asset drifts >10% from target allocation.',
+  ov_learn_more:'Learn more →',
+  ov_composition:'Current Wealth Composition',ov_comp_future:'In 15 Years',ov_comp_asset:'Asset',ov_comp_type:'Type',ov_comp_value:'Value (EUR)',ov_comp_share:'Share',
+  th_monthly_spend:'Spend/mo',
+  // Projection tab
+  pj_depletion:'Depletion Age',pj_depletion_never:'Never',pj_depletion_zero:'Liquid hits €0',pj_depletion_pos:'Always positive',
+  pj_fire:'FIRE Progress',pj_fire_need:'Need €{0} (25× annual spend)',
+  pj_chart_title:'Lifetime Projection',pj_chart_tip:'Teal area = liquid (investable) assets. Purple area = property equity.',
+  pj_whatif:'What-If Levers',
+  // Cash Flow tab
+  cf_savings_rate:'Savings Rate',cf_annual_surplus:'Annual Net Surplus',cf_cum_15yr:'Lifetime Net',cf_best_yr:'Best year',cf_worst_yr:'Tightest year',
+  cf_excellent:'Excellent',cf_good:'Good — aim for 30%',cf_below:'Below target',
+  cf_chart_title:'Income vs Spending (lifetime)',cf_chart_tip:'Gold line = net surplus. Hover any bar for full breakdown. Badges mark life events.',
+  cf_milestones:'Life Milestones',
+  // Property tab
+  pt_total_equity:'Total Real Estate Equity',pt_market_val:'Market Value',pt_remaining:'Remaining',pt_monthly:'Monthly',
+  pt_yrs_remaining:'{0} yrs remaining',pt_purchase_planned:'Purchase planned: year {0} (age {1})',
+  pt_empty:'No properties added yet.',pt_empty_sub:'Add one in the left panel to see equity tracking, LTV ratios, and amortization details here.',
+  pt_properties:'{0} property',pt_properties_pl:'{0} properties',
+  // Insights tab
+  ins_smart_alerts:'Smart Alerts',
+  ins_strong_pos:'Strong financial position',ins_strong_desc:'Monte Carlo success rate is {0}%. Your plan is on track.',
+  ins_emergency_met:'Emergency fund covered',ins_emergency_met_desc:'You have 6+ months of expenses in liquid assets.',
+  ins_mc_below:'Monte Carlo below 80%',ins_mc_below_desc:'Success rate is {0}%. Consider increasing savings rate or adjusting retirement age.',
+  ins_cash_drag:'Cash drag detected',ins_cash_drag_desc:'€{0} ({1}%) in cash. Consider investing excess above emergency fund.',
+  ins_pension_low:'Pension points low',ins_pension_low_desc:'You have {0} points. Average retiree needs ~40 for adequate pension.',
+  ins_plan_risk:'Plan at risk',ins_plan_risk_desc:'Only {0}% of simulations succeed. Urgent: increase savings or delay retirement.',
+  ins_emergency_gap:'Emergency fund gap',ins_emergency_gap_desc:'Gap of €{0}. Prioritise building 6 months of expenses.',
+  ins_early_depletion:'Early depletion risk',ins_early_depletion_desc:'Liquid assets hit €0 at age {0}. Review spending or retirement timing.',
+  tab_method:'Methodology',
+  meth_title:'How This Dashboard Works',
+  meth_intro:'This page explains the key assumptions, models, and formulas behind your projections. All numbers are estimates — not financial advice.',
+  meth_child_title:'Child Cost Assumptions',
+  meth_child_desc:'Monthly costs per child vary by age bracket. These are rough averages for Germany, covering Kita/school, food, clothing, activities, and university living costs. They compound with your spending inflation rate each year.',
+  meth_age_range:'Age range',meth_monthly_cost:'Monthly cost',meth_includes:'Includes',
+  meth_child_0:'Setup (cot, pram, car seat) amortised + nappies, formula, paediatrician',
+  meth_child_1:'Kita, food, clothing, basic toys',
+  meth_child_3:'Kindergarten/school, after-school activities, food',
+  meth_child_6:'School supplies, sports/music lessons, clothing',
+  meth_child_10:'School, hobbies, electronics, growing food costs',
+  meth_child_18:'University rent, food, transport, tuition (if applicable)',
+  meth_child_note:'Costs are per child and scale with your inflation assumption. Kita cost (ages 0–6) is added on top: €0 in Berlin, or your custom amount. After age 22 the child leaves the model.',
+  meth_mc_title:'Monte Carlo Simulation',
+  meth_mc_desc:'The "Success Rate" metric uses a Monte Carlo approach: instead of assuming fixed returns, it simulates 1,000 random futures where market returns vary year to year. This gives a probability that your liquid assets stay above €0 until age 90.',
+  meth_mc_how:'How it works:',
+  meth_mc_step1:'Each asset grows by its expected return PLUS a random shock drawn from a normal distribution (mean = 0, standard deviation = asset volatility).',
+  meth_mc_step2:'Income, spending, and surplus allocation follow the same rules as the deterministic projection.',
+  meth_mc_step3:'This is repeated 1,000 times, each with different random market outcomes.',
+  meth_mc_step4:'Success rate = % of simulations where liquid assets never go below €0 before age 90.',
+  meth_mc_vol_title:'Volatility assumptions by asset type:',
+  meth_asset_type:'Asset type',meth_volatility:'Annual volatility',meth_explanation:'Rationale',
+  meth_vol_cash:'Very low risk — savings accounts, term deposits',
+  meth_vol_bonds:'Moderate — government and corporate bonds',
+  meth_vol_etf:'Typical global equity index (e.g. MSCI World long-term average)',
+  meth_vol_crypto:'Highly volatile — Bitcoin, Ethereum',
+  meth_mc_note:'The median and 10th percentile outcomes shown elsewhere come from sorting these 1,000 final values. A higher success rate means more resilience to bad market years.',
+  meth_proj_title:'Projection Engine',
+  meth_proj_desc:'The year-by-year projection calculates:',
+  meth_proj_1:'Income: each stream grows by its growth rate, reduced during parental leave months. German tax applied if toggled on (simplified progressive brackets).',
+  meth_proj_2:'Spending: baseline × 12 × inflation factor, plus child costs, mortgage payments, ad-hoc items.',
+  meth_proj_3:'Net surplus: income minus spending. Positive surplus is allocated to assets by your allocation sliders. Negative draws from lowest-growth assets first.',
+  meth_proj_4:'Asset growth: each bucket compounds annually at its stated growth rate.',
+  meth_proj_5:'Property: equity = market value (compounding at growth rate) minus remaining mortgage principal (amortising loan formula).',
+  meth_pension_title:'German Pension Estimate',
+  meth_pension_desc:'Pension is estimated using the German Entgeltpunkte system. Each year of employment earns points = gross salary / average salary (capped at Beitragsbemessungsgrenze ~€90k). At draw age, monthly pension = total points × current pension value (€39.32). This is a simplified estimate — actual pensions depend on many additional factors.',
+  meth_disclaimer_title:'Disclaimer',
+  meth_disclaimer:'This tool is for educational and planning purposes only. It is not financial advice. Assumptions are simplified and may not reflect your actual tax situation, investment returns, or life circumstances. Always consult a qualified financial advisor before making major financial decisions.',
+  ft_made:'Made with 💛 by',ft_feedback:'Got feedback?',ft_coffee:'Buy me a coffee',
+},de:{
+  personal:'Persoenlich',assets:'Vermoegen',income:'Einkommensquellen',spending:'Ausgaben',
+  children:'Kinder',properties:'Immobilienkauf',retirement:'Ruhestand & Rente',
+  your_name:'Dein Name',partner_name:'Partner Name',your_birth_year:'Geburtsjahr',partner_birth_year:'Geburtsjahr',
+  add:'+ Hinzu',
+  tip_personal:'Namen und Geburtsjahre eingeben.',
+  tip_assets:'Alle aktuellen Vermoegensarten. Jede hat eigene Wachstumsannahme.',
+  tip_income:'Alle Einkommensquellen. "In DE versteuert" aktivieren falls Bruttoeinkommen mit deutscher Steuer. Aus lassen wenn bereits netto. "Elternzeit" bei betroffenen Quellen aktivieren.',
+  tip_spending:'Monatliche Basis + einmalige oder wiederkehrende Ausgaben.',
+  tip_children:'Jedes Kind loest Elternzeit, Elterngeld, Kindergeld und Kosten aus.',
+  tip_properties:'Aktuelle oder zukuenftige Immobilien. "Already own" fuer bestehende Hypotheken.',
+  tip_retirement:'Rentenalter und Gehaltshistorie fuer Punkteberechnung.',
+  asset_name:'Name',asset_value:'Wert',asset_growth:'Wachstum %/J.',
+  asset_type:'Typ',type_cash:'Bargeld',type_etf:'ETF',type_stocks:'Aktien',
+  type_bonds:'Anleihen',type_property:'Immobilie',type_crypto:'Krypto',type_other:'Sonstiges',type_dividends:'Dividenden',
+  income_label:'Bezeichnung',income_monthly:'Netto/Monat',income_start:'Startjahr',
+  income_end:'Endjahr',income_growth:'Wachstum %/J.',income_tax:'In DE versteuert',
+  spend_baseline:'Monatliche Basis (EUR)',spend_inflation:'Inflation %/J.',
+  spend_label:'Bezeichnung',spend_amount:'Betrag',spend_start:'Startjahr',
+  income_amount:'Betrag',income_freq:'Frequenz',alloc_pct:'Überschuss-Verteilung',alloc_summary:'Überschuss-Split',alloc_invested:'investiert',alloc_cash:'Cash-Puffer',
+  surplus_alloc_title:'Monatl. Überschuss-Verteilung',surplus_alloc_tip:'Nach allen Ausgaben — wie soll der monatliche Überschuss auf die Anlagen verteilt werden? Rest geht in Cash-Puffer.',
+  spend_freq:'Frequenz',freq_one_off:'Einmalig',freq_monthly:'Monatlich',freq_quarterly:'Quartalsweise',freq_annual:'Jährlich',
+  child_birth_year:'Geburtsjahr Kind',child_maternity_months:'Elternzeit (Monate)',
+  prop_label:'Bezeichnung',prop_price:'Preis (EUR)',prop_age:'Kaufjahr',
+  prop_down:'Anzahlung %',prop_rate:'Zins %',prop_term:'Laufzeit (J.)',prop_growth:'Wertzuwachs %/J.',
+  prop_grunderwerb:'Grunderwerbsteuer',prop_notar:'Notar & Grundbuch',prop_makler:'Makler',prop_neben_total:'Nebenkosten gesamt',
+  retire_your_age:'Dein Rentenalter',retire_partner_age:'Partner Rentenalter',
+  pension_draw_age:'Renteneintritt (Du)',pension_draw_age_p:'Renteneintritt (Partner)',
+  pension_periods:'Gehaltsperioden (fuer Rentenpunkte)',
+  period_label:'Job / Periode',period_salary:'Bruttojahr (EUR)',period_start:'Von',period_end:'Bis',
+  pension_tip:'Jede Periode berechnet Punkte separat. Punkte = Brutto / Durchschnitt (~45k). Jobwechsel? Neue Periode hinzufuegen.',
+  calc_points:'Geschaetzte Punkte: {0} (du) + {1} (Partner)',
+  tab_overview:'Uebersicht',tab_projection:'Prognose',tab_planner:'Cashflow',tab_insights:'Analyse',tab_action:'Immobilie',
+  h_mc:'Monte-Carlo-Analyse',h_chart:'Vermoegen nach Alter',h_key_ages:'Wichtige Alter',
+  h_projection:'Jahresprognose',h_planner:'Grosse Plaene',h_insights:'Analyse',h_action:'Massnahmenplan',
+  mc_success:'Erfolgsrate',mc_conf_age:'80% Konfidenz',mc_median_90:'Median @90',mc_worst_10:'Schlechteste 10%',
+  l_liquid:'Liquide',l_non_liquid:'Illiquide',l_total:'Gesamt',l_zero:'Nulllinie',
+  th_age:'Alter',th_year:'Jahr',th_event:'Ereignis',th_nw:'Vermoegen',th_liquid:'Liquide',th_earn:'Einkommen',th_spend:'Ausgaben',th_net:'Netto',
+  dark_mode:'Dunkel',reset:'Zuruecksetzen',
+  subtitle:'Finanzplanung für Paare · Deutsches Modell',
+  chart_note:'Liquide = investierbar | Illiquide = Immobilienkapital',
+  mc_note:'1.000 Simulationen. Erfolg = liquide > 0 mit 90.',
+  ins_spend:'Wohin fliesst das Geld?',ins_income:'Woher kommt das Einkommen?',ins_liquid:'Liquiditaet im Ruhestand',
+  act_cashflow:'Monatlicher Cashflow',act_buckets:'Aufteilung',act_this_week:'Diese Woche',
+  th_item:'Posten',th_monthly:'Monatlich',th_bucket:'Topf',th_target:'Ziel',th_purpose:'Zweck',
+  planner_note:'Deine grossen Lebensereignisse und deren finanzielle Auswirkung.',
+  wiz_title:'Plan erstellen',wiz_sub:'5 Schritte fuer dein Finanzbild. Keine Sorge — du kannst alles spaeter aendern.',wiz_skip:'Ueberspringen',wiz_next:'Weiter →',wiz_done:'Fertig ✓',
+  wiz_s1:'Wie heisst ihr?',wiz_s2:'Jährliches Bruttoeinkommen (EUR)?',wiz_s3:'Monatliche Haushaltsausgaben (EUR)?',wiz_s4:'Aktuelle Ersparnisse in bar (EUR)?',wiz_s5:'Plant ihr Kinder?',
+  wiz_yes:'Ja',wiz_no:'Nein',wiz_notsure:'Noch unsicher',
+  progress_complete:'{0}/7 fertig',mobile_inputs:'📝 Eingaben',
+  sb_nw:'Vermoegen',sb_surplus:'Monatl. Ueberschuss',sb_mc:'Monte Carlo',sb_retire:'Laufzeit',sb_event:'Naechstes Ereignis',
+  sb_tip_nw:'Gesamtvermoegen minus Schulden',sb_tip_surplus:'Einkommen minus Ausgaben pro Monat',sb_tip_mc:'% der Simulationen ohne Geldmangel',sb_tip_retire:'Rentenalter → Geld reicht bis zu diesem Alter',sb_tip_event:'Naechstes grosses Lebensereignis',
+  header_title:'Money Map 🗺️',header_sub:'Simuliere deine finanzielle Zukunft — spiel mit den Zahlen, entdecke Möglichkeiten',header_disclaimer:'100% privat · keine Daten verlassen deinen Browser',
+  currency:'Waehrung',parental_leave:'Elternzeit',
+  children_tip:'Mutterschutz (14 Wochen) ist automatisch. Unten: Elternzeit-Monate pro Elternteil (max. 36 pro Kind).',
+  kita_berlin_label:'Ich wohne in Berlin (Kita kostenlos)',kita_cost_label:'Monatl. Kita-Kosten',
+  child_n:'Kind',elternzeit_split:'Elternzeit-Aufteilung',max_exceeded:'Ueberschreitet 36 Monate Maximum',no_children:'Noch keine Kinder hinzugefuegt',
+  already_own:'Bereits im Besitz (Hypothek)',years_owned:'Jahre im Besitz',
+  retire_age_label:'Rentenalter',pension_start_label:'Rentenbeginn',salary_history:'Gehaltshistorie (fuer Rentenpunkte)',
+  add_period:'+ Periode hinzufuegen',ongoing:'laufend',
+  nw_today:'Vermoegen heute',tip_mc_success:'Wahrscheinlichkeit, dass liquide Mittel bis 90 ueber 0€ bleiben (1.000 Simulationen)',
+  tip_median:'Mittleres Ergebnis: Haelfte besser, Haelfte schlechter',tip_worst:'10. Perzentil: in 90% der Faelle besser als dies',
+  tip_nw_today:'Aktuelles Nettovermoegen: alle Anlagen minus alle Verbindlichkeiten',
+  strong:'Stark',moderate:'Mittel',at_risk:'Gefaehrdet',
+  no_events:'Noch keine Lebensereignisse konfiguriert.',liquid_label:'liquide',liquid_nw_label:'Liquide Mittel in dem Alter',
+  peak_wealth:'Spitzenvermoegen',at_age_50:'Mit 50',
+  ins_peak:'Spitzenvermoegen €{0} mit {1} (Jahr {2})',ins_at50:'Liquide: €{0} · Gesamt: €{1}',
+  ins_income_detail:'Jahreseinkommen: €{0} · Ausgaben: €{1} · Sparquote: {2}%',
+  ins_retire_detail:'Bei Rente (Alter {0}): liquide €{1} · gesamt €{2}',
+  goes_negative:'Wird negativ ab Alter {0}',stays_positive:'Bleibt positiv',
+  baseline_label:'Grundausgaben',children_label:'Kinder',surplus_label:'Ueberschuss',
+  status_header:'Status',emergency:'Notfall',invest:'Investition',property_bucket:'Immobilie',
+  six_months_exp:'6 Monate Ausgaben',long_term_growth:'Langfristiges Wachstum',saving_status:'Sparen',down_payment:'Anzahlung',
+  met:'Erreicht',gap_status:'Luecke',ongoing_status:'Laufend',
+  action_transfer:'Auto-Ueberweisung €{0}/Mo. auf Investmentkonto',action_emergency:'Notfallfonds auffuellen — Luecke: €{0}',
+  action_elterngeld:'Elterngeld ~3 Monate vor Termin beantragen',action_pension_low:'Rentenbescheid pruefen — Punkte ({0}) scheinen niedrig',
+  action_savings_rate:'Sparquote erhoehen oder Wachstumsannahmen anpassen',action_review:'Annahmen vierteljaehrlich pruefen',
+  act_cf_desc:'Einkommen: €{0}/Mo. · Ausgaben: €{1}/Mo. · Ueberschuss: ',
+  you:'Du',partner:'Partner',person1:'Person 1',person2:'Person 2',
+  age_prefix:'Alter',year_prefix:'Jahr',
+  ov_chart_title:'Dein Vermögen im Zeitverlauf',
+  ov_chart_tip:'Jeder Balken = Gesamtvermögen in diesem Alter. Türkis = liquide (Bargeld, ETF, Aktien). Lila = Immobilienkapital.',
+  ov_spend_chart_title:'Jährliche Ausgaben nach Alter — Aufschlüsselung',
+  ov_spend_chart_tip:'Jeder Balken zeigt die jährlichen Gesamtausgaben in diesem Alter, aufgeteilt in Komponenten.',
+  ov_sp_baseline:'Haushalt & Gesundheit',ov_sp_children:'Kinder',ov_sp_housing:'Hypothek / Immobilie',ov_sp_other:'Sonderausgaben',
+  ov_takeaway_pos:'Dein Vermögen wächst auf einen Höchststand von €{0} im Alter von {1} und bleibt bis Alter {2} positiv.',
+  ov_takeaway_neg:'Deine liquiden Mittel gehen im Alter von {0} aus ({1} Jahre nach Renteneintritt). Danach musst du ggf. illiquide Vermögenswerte nutzen (z.B. Immobilie verkaufen oder verkleinern).',
+  ov_takeaway_early_neg:'Deine liquiden Mittel gehen bereits im Alter von {0} (Jahr {1}) aus — weit vor der Rente! Ausgaben senken, Einkommen erhöhen oder Immobilie verkaufen/verkleinern.',
+  ov_takeaway_illiquid:'Ab Alter {0} deckt dein liquides Vermögen nur noch {1} Jahr(e) Ausgaben — der Rest steckt in Immobilien. Verkaufen/verkleinern oder mehr Liquidität aufbauen.',
+  ov_nw_today:'Vermögen heute',ov_success_rate:'Erfolgsrate',ov_money_lasts:'Geld reicht bis',
+  ov_strong:'Stark',ov_moderate:'Mittel',ov_at_risk:'Gefährdet',
+  ov_runway_inf:'∞ Laufzeit nach Rente',ov_runway_yrs:'{0} Jahre nach Rente mit {1}',ov_lasts_before_retire:'Cash geht vor der Rente aus!',ov_lasts_illiquid:'Cash knapp — Vermögen in Immobilien',
+  ov_explain_title:'Was bedeuten diese Zahlen?',
+  ov_explain_nw:'Alles was du besitzt (Bargeld, Anlagen, Immobilien) minus Schulden. Darunter steht, wie viel dein Vermögen pro Jahr wächst oder schrumpft.',
+  ov_explain_mc:'Wir simulieren 1.000 mögliche Zukünfte mit zufälligen Marktrenditen. Dieser Prozentsatz zeigt, in wie vielen du mit 90 noch Geld hast. Über 80% = stark.',
+  ov_explain_mc_link:'Mehr über Monte-Carlo-Simulation →',
+  ov_explain_lasts:'Basierend auf deinen Ersparnissen und Ausgaben: das Alter, in dem investierbares Vermögen €0 erreicht. "100+" bedeutet kein Engpass.',
+  ov_hnwi:'HNWI-Status',ov_millionaire:'Millionär',
+  ov_hnwi_age:'Alter {0}',ov_hnwi_never:'Nicht erreicht',ov_hnwi_already:'Bereits!',
+  ov_explain_hnwi:'High-Net-Worth Individual = liquide Mittel (Bargeld + Anlagen, ohne Immobilien) über €1M nach Abzug von Schulden. Das Alter, in dem du diese Schwelle erstmals überschreitest.',
+  ov_explain_mill:'Millionär = Gesamtvermögen (alle Vermögenswerte inkl. Immobilien, minus Schulden) über €1M. Das Alter, in dem du diese Schwelle erreichst.',
+  ov_nw_sub_grow:'Wächst €{0}/Jahr',ov_nw_sub_shrink:'Schrumpft €{0}/Jahr',
+  ov_nudge_mc:'Dein Plan gelingt nur in {0}% von 1.000 Simulationen. Maßnahmen: Sparquote erhöhen, Rente 2-3 Jahre verschieben, oder Bargeld in wachstumsstärkere Anlagen umschichten.',
+  ov_nudge_cash:'Bargeld-Bremse: €{0} ({1}% der investierbaren Mittel) mit minimaler Rendite. Überschuss über 6-Monats-Reserve in ETFs umschichten.',
+  ov_nudge_runway:'Laufzeit nach Rente nur {0} Jahre. Ziel: 25+ Jahre. Versuch: €{1} mehr pro Monat sparen oder Rentenalter um 2 Jahre verschieben.',
+  ov_nudge_healthy:'Deine Finanzen sind gesund. Vierteljährlich prüfen und bei >10% Abweichung rebalancen.',
+  ov_learn_more:'Mehr erfahren →',
+  ov_composition:'Aktuelle Vermögensaufteilung',ov_comp_future:'In 15 Jahren',ov_comp_asset:'Anlage',ov_comp_type:'Typ',ov_comp_value:'Wert (EUR)',ov_comp_share:'Anteil',
+  th_monthly_spend:'Ausgaben/Mo.',
+  pj_depletion:'Erschöpfungsalter',pj_depletion_never:'Nie',pj_depletion_zero:'Liquidität erreicht €0',pj_depletion_pos:'Immer positiv',
+  pj_fire:'FIRE-Fortschritt',pj_fire_need:'Benötigt €{0} (25× Jahresausgaben)',
+  pj_chart_title:'Lebenslange Prognose',pj_chart_tip:'Türkis = liquide (investierbare) Mittel. Lila = Immobilienkapital.',
+  pj_whatif:'Was-wäre-wenn',
+  cf_savings_rate:'Sparquote',cf_annual_surplus:'Jährlicher Nettoueberschuss',cf_cum_15yr:'Lebenslang netto',cf_best_yr:'Bestes Jahr',cf_worst_yr:'Engster Jahr',
+  cf_excellent:'Ausgezeichnet',cf_good:'Gut — Ziel 30%',cf_below:'Unter Ziel',
+  cf_chart_title:'Einnahmen vs. Ausgaben (Lebenslang)',cf_chart_tip:'Goldlinie = Netto-Überschuss. Hover für Details. Badges zeigen Lebensereignisse.',
+  cf_milestones:'Lebensmeilensteine',
+  pt_total_equity:'Gesamtes Immobilienkapital',pt_market_val:'Marktwert',pt_remaining:'Restschuld',pt_monthly:'Monatlich',
+  pt_yrs_remaining:'{0} Jahre verbleibend',pt_purchase_planned:'Kauf geplant: Jahr {0} (Alter {1})',
+  pt_empty:'Noch keine Immobilien hinzugefügt.',pt_empty_sub:'Füge eine im linken Panel hinzu, um Eigenkapital, LTV und Tilgungsdetails hier zu sehen.',
+  pt_properties:'{0} Immobilie',pt_properties_pl:'{0} Immobilien',
+  ins_smart_alerts:'Intelligente Hinweise',
+  ins_strong_pos:'Starke Finanzlage',ins_strong_desc:'Monte-Carlo-Erfolgsrate ist {0}%. Dein Plan ist auf Kurs.',
+  ins_emergency_met:'Notfallfonds gedeckt',ins_emergency_met_desc:'Du hast 6+ Monate Ausgaben in liquiden Mitteln.',
+  ins_mc_below:'Monte Carlo unter 80%',ins_mc_below_desc:'Erfolgsrate ist {0}%. Sparquote erhöhen oder Rentenalter anpassen.',
+  ins_cash_drag:'Bargeld-Bremse erkannt',ins_cash_drag_desc:'€{0} ({1}%) in Bargeld. Überschuss über Notfallfonds investieren.',
+  ins_pension_low:'Rentenpunkte niedrig',ins_pension_low_desc:'Du hast {0} Punkte. Durchschnittliche Rentner brauchen ~40.',
+  ins_plan_risk:'Plan gefährdet',ins_plan_risk_desc:'Nur {0}% der Simulationen erfolgreich. Dringend: mehr sparen oder Rente verschieben.',
+  ins_emergency_gap:'Notfallfonds-Lücke',ins_emergency_gap_desc:'Lücke von €{0}. Priorität: 6 Monate Ausgaben aufbauen.',
+  ins_early_depletion:'Frühes Erschöpfungsrisiko',ins_early_depletion_desc:'Liquidität erreicht €0 mit Alter {0}. Ausgaben oder Rentenalter überprüfen.',
+  tab_method:'Methodik',
+  meth_title:'So funktioniert dieses Dashboard',
+  meth_intro:'Diese Seite erklärt die wichtigsten Annahmen, Modelle und Formeln hinter Ihren Prognosen. Alle Zahlen sind Schätzungen — keine Finanzberatung.',
+  meth_child_title:'Kinderkosten-Annahmen',
+  meth_child_desc:'Monatliche Kosten pro Kind variieren nach Altersgruppe. Dies sind grobe Durchschnittswerte für Deutschland: Kita/Schule, Essen, Kleidung, Aktivitäten und Lebenshaltungskosten während des Studiums. Sie steigen jährlich mit Ihrer Inflationsannahme.',
+  meth_age_range:'Altersgruppe',meth_monthly_cost:'Monatl. Kosten',meth_includes:'Beinhaltet',
+  meth_child_0:'Erstausstattung (Bett, Kinderwagen, Autositz) + Windeln, Milch, Kinderarzt',
+  meth_child_1:'Kita, Essen, Kleidung, Spielzeug',
+  meth_child_3:'Kindergarten/Schule, Nachmittagsbetreuung, Essen',
+  meth_child_6:'Schulmaterial, Sport-/Musikunterricht, Kleidung',
+  meth_child_10:'Schule, Hobbys, Elektronik, steigende Essenskosten',
+  meth_child_18:'Wohnheim/WG-Miete, Essen, Transport, Studiengebühren',
+  meth_child_note:'Kosten gelten pro Kind und skalieren mit Ihrer Inflationsannahme. Kita-Kosten (0–6 Jahre) werden zusätzlich berechnet: €0 in Berlin oder Ihr eigener Betrag. Nach 22 Jahren verlässt das Kind das Modell.',
+  meth_mc_title:'Monte-Carlo-Simulation',
+  meth_mc_desc:'Die „Erfolgsrate" nutzt einen Monte-Carlo-Ansatz: Statt feste Renditen anzunehmen, werden 1.000 zufällige Zukunftsszenarien simuliert, in denen die Marktrenditen von Jahr zu Jahr variieren. Das Ergebnis ist eine Wahrscheinlichkeit, dass Ihre liquiden Mittel bis Alter 90 über €0 bleiben.',
+  meth_mc_how:'So funktioniert es:',
+  meth_mc_step1:'Jedes Asset wächst um seine erwartete Rendite PLUS einen zufälligen Schock aus einer Normalverteilung (Mittelwert = 0, Standardabweichung = Asset-Volatilität).',
+  meth_mc_step2:'Einkommen, Ausgaben und Überschussverteilung folgen denselben Regeln wie die deterministische Prognose.',
+  meth_mc_step3:'Dies wird 1.000 Mal wiederholt, jeweils mit unterschiedlichen zufälligen Marktergebnissen.',
+  meth_mc_step4:'Erfolgsrate = % der Simulationen, in denen liquide Mittel nie unter €0 fallen vor Alter 90.',
+  meth_mc_vol_title:'Volatilitätsannahmen nach Assettyp:',
+  meth_asset_type:'Assettyp',meth_volatility:'Jährl. Volatilität',meth_explanation:'Begründung',
+  meth_vol_cash:'Sehr geringes Risiko — Sparkonten, Festgeld',
+  meth_vol_bonds:'Moderat — Staats- und Unternehmensanleihen',
+  meth_vol_etf:'Typischer globaler Aktienindex (z.B. MSCI World Langzeitdurchschnitt)',
+  meth_vol_crypto:'Hochvolatil — Bitcoin, Ethereum',
+  meth_mc_note:'Median und 10. Perzentil entstehen durch Sortierung dieser 1.000 Endwerte. Eine höhere Erfolgsrate bedeutet mehr Widerstandsfähigkeit gegen schlechte Marktjahre.',
+  meth_proj_title:'Prognose-Engine',
+  meth_proj_desc:'Die Jahresprognose berechnet:',
+  meth_proj_1:'Einkommen: jede Quelle wächst um ihre Wachstumsrate, reduziert während Elternzeit. Deutsche Steuer (vereinfachte progressive Stufen) falls aktiviert.',
+  meth_proj_2:'Ausgaben: Basis × 12 × Inflationsfaktor, plus Kinderkosten, Hypothekenzahlungen, Sonderausgaben.',
+  meth_proj_3:'Netto-Überschuss: Einkommen minus Ausgaben. Positiver Überschuss wird nach Ihren Allokations-Slidern verteilt. Negativer Saldo wird aus den am schwächsten wachsenden Assets gezogen.',
+  meth_proj_4:'Asset-Wachstum: jeder Topf wächst jährlich mit seiner angegebenen Rendite.',
+  meth_proj_5:'Immobilie: Eigenkapital = Marktwert (mit Wachstumsrate) minus verbleibende Hypothek (Annuitätendarlehen-Formel).',
+  meth_pension_title:'Deutsche Rentenberechnung',
+  meth_pension_desc:'Die Rente wird über das Entgeltpunkte-System geschätzt. Jedes Beschäftigungsjahr ergibt Punkte = Bruttogehalt / Durchschnittsgehalt (gedeckelt bei ~€90k BBG). Bei Renteneintritt: monatliche Rente = Gesamtpunkte × aktueller Rentenwert (€39,32). Dies ist eine vereinfachte Schätzung.',
+  meth_disclaimer_title:'Haftungsausschluss',
+  meth_disclaimer:'Dieses Tool dient nur zu Bildungs- und Planungszwecken. Es ist keine Finanzberatung. Annahmen sind vereinfacht und spiegeln möglicherweise nicht Ihre tatsächliche Steuersituation, Anlagerenditen oder Lebensumstände wider. Konsultieren Sie immer einen qualifizierten Finanzberater.',
+  ft_made:'Gemacht mit 💛 von',ft_feedback:'Feedback?',ft_coffee:'Einen Kaffee spendieren',
+},vi:{
+  personal:'Cá nhân',assets:'Tài sản',income:'Nguồn thu nhập',spending:'Chi tiêu',
+  children:'Con cái',properties:'Mua bất động sản',retirement:'Nghỉ hưu & Lương hưu',
+  your_name:'Tên bạn',partner_name:'Tên partner',your_birth_year:'Năm sinh',partner_birth_year:'Năm sinh',
+  add:'+ Thêm',
+  tip_personal:'Nhập tên và năm sinh của bạn và partner.',
+  tip_assets:'Liệt kê tất cả tài sản. Mỗi loại có giả định tăng trưởng riêng.',
+  tip_income:'Tất cả nguồn thu nhập. Bật "Chịu thuế Đức" nếu là thu nhập gộp chịu thuế Đức. Tắt nếu đã là lương ròng. Bật "Nghỉ phép cha mẹ" cho nguồn bị ảnh hưởng.',
+  tip_spending:'Chi tiêu cơ bản hàng tháng + các khoản lớn.',
+  tip_children:'Mỗi đứa trẻ = nghỉ thai sản + Elterngeld + Kindergeld + chi phí.',
+  tip_properties:'BDS hiện tại hoặc tương lai. Bật "Already own" cho thế chấp đang trả.',
+  tip_retirement:'Tuổi nghỉ hưu và lịch sử lương để tính điểm hưu trí.',
+  asset_name:'Tên',asset_value:'Giá trị',asset_growth:'Tăng %/năm',
+  asset_type:'Loại',type_cash:'Tiền mặt',type_etf:'ETF',type_stocks:'Cổ phiếu',
+  type_bonds:'Trái phiếu',type_property:'BĐS',type_crypto:'Crypto',type_other:'Khác',type_dividends:'Cổ tức',
+  income_label:'Tên',income_monthly:'Ròng/tháng',income_start:'Năm bắt đầu',
+  income_end:'Năm kết thúc',income_growth:'Tăng %/năm',income_tax:'Chịu thuế Đức',
+  spend_baseline:'Chi cơ bản/tháng (EUR)',spend_inflation:'Lạm phát %/năm',
+  spend_label:'Tên',spend_amount:'Số tiền',spend_start:'Năm',
+  income_amount:'Số tiền',income_freq:'Tần suất',alloc_pct:'Phân bổ thặng dư',alloc_summary:'Chia thặng dư',alloc_invested:'đầu tư',alloc_cash:'Tiền mặt dự phòng',
+  surplus_alloc_title:'Phân bổ thặng dư hàng tháng',surplus_alloc_tip:'Sau tất cả chi phí, thặng dư hàng tháng được chia vào tài sản như thế nào? Phần còn lại vào tiền mặt dự phòng.',
+  spend_freq:'Tần suất',freq_one_off:'Một lần',freq_monthly:'Hàng tháng',freq_quarterly:'Hàng quý',freq_annual:'Hàng năm',
+  child_birth_year:'Năm sinh bé',child_maternity_months:'Nghỉ thai sản (tháng)',
+  prop_label:'Tên',prop_price:'Giá (EUR)',prop_age:'Năm mua',
+  prop_down:'Đặt cọc %',prop_rate:'Lãi %',prop_term:'Kỳ hạn (năm)',prop_growth:'Tăng giá %',
+  prop_grunderwerb:'Thuế mua nhà',prop_notar:'Công chứng & Sổ đỏ',prop_makler:'Môi giới',prop_neben_total:'Tổng phí phụ',
+  retire_your_age:'Tuổi nghỉ hưu (bạn)',retire_partner_age:'Tuổi nghỉ hưu (partner)',
+  pension_draw_age:'Tuổi nhận lương hưu (bạn)',pension_draw_age_p:'Tuổi nhận lương hưu (partner)',
+  pension_periods:'Các giai đoạn lương (để tính điểm)',
+  period_label:'Công việc',period_salary:'Lương gộp/năm (EUR)',period_start:'Từ',period_end:'Đến',
+  pension_tip:'Điểm = lương gộp / trung bình (~45k). Đổi việc? Thêm giai đoạn mới.',
+  calc_points:'Tổng điểm ước tính: {0} (bạn) + {1} (partner)',
+  tab_overview:'Tổng quan',tab_projection:'Dự báo',tab_planner:'Dòng tiền',tab_insights:'Phân tích',tab_action:'Bất động sản',
+  h_mc:'Monte Carlo',h_chart:'Tài sản theo tuổi',h_key_ages:'Mốc tuổi',
+  h_projection:'Dự báo theo năm',h_planner:'Kế hoạch lớn',h_insights:'Phân tích',h_action:'Hành động',
+  mc_success:'Tỉ lệ',mc_conf_age:'80% tin cậy',mc_median_90:'Trung vị @90',mc_worst_10:'Xấu nhất 10%',
+  l_liquid:'Thanh khoản',l_non_liquid:'BĐS',l_total:'Tổng',l_zero:'Mức 0',
+  th_age:'Tuổi',th_year:'Năm',th_event:'Sự kiện',th_nw:'Tài sản',th_liquid:'Thanh khoản',th_earn:'Thu',th_spend:'Chi',th_net:'Ròng',
+  dark_mode:'Tối',reset:'Đặt lại',
+  subtitle:'Kế hoạch tài chính cho cặp đôi · Mô hình Đức',
+  chart_note:'Thanh khoản = đầu tư | BĐS = vốn nhà',
+  mc_note:'1.000 mô phỏng. Thành công = thanh khoản > 0 ở tuổi 90.',
+  ins_spend:'Tiền đi đâu?',ins_income:'Tiền đến từ đâu?',ins_liquid:'Thanh khoản khi nghỉ hưu',
+  act_cashflow:'Dòng tiền hàng tháng',act_buckets:'Phân bổ',act_this_week:'Làm tuần này',
+  th_item:'Khoản',th_monthly:'Hàng tháng',th_bucket:'Quỹ',th_target:'Mục tiêu',th_purpose:'Mục đích',
+  planner_note:'Các sự kiện lớn và tác động tài chính.',
+  wiz_title:'Hãy thiết lập kế hoạch',wiz_sub:'5 bước nhanh để xây dựng bức tranh tài chính. Đừng lo — bạn có thể thay đổi sau.',wiz_skip:'Bỏ qua, tự nhập',wiz_next:'Tiếp →',wiz_done:'Xong ✓',
+  wiz_s1:'Tên của bạn và partner?',wiz_s2:'Thu nhập gộp hàng năm (EUR)?',wiz_s3:'Chi tiêu hộ gia đình/tháng (EUR)?',wiz_s4:'Tổng tiền mặt tiết kiệm (EUR)?',wiz_s5:'Có kế hoạch có con không?',
+  wiz_yes:'Có',wiz_no:'Không',wiz_notsure:'Chưa chắc',
+  progress_complete:'{0}/7 hoàn tất',mobile_inputs:'📝 Nhập liệu',
+  sb_nw:'Tài sản ròng',sb_surplus:'Thặng dư/tháng',sb_mc:'Monte Carlo',sb_retire:'Thời gian',sb_event:'Sự kiện tiếp',
+  sb_tip_nw:'Tổng tài sản trừ nợ hiện tại',sb_tip_surplus:'Thu nhập trừ chi tiêu mỗi tháng',sb_tip_mc:'% mô phỏng không hết tiền',sb_tip_retire:'Tuổi hưu → tiền đủ đến tuổi này',sb_tip_event:'Sự kiện lớn tiếp theo trong dòng thời gian',
+  header_title:'Money Map 🗺️',header_sub:'Mô phỏng tương lai tài chính — thử các con số, khám phá khả năng',header_disclaimer:'100% riêng tư · dữ liệu không rời trình duyệt',
+  currency:'Tiền tệ',parental_leave:'Nghỉ phép cha mẹ',
+  children_tip:'Mutterschutz (14 tuần) tự động. Bên dưới: tháng Elternzeit mỗi người (tối đa 36/bé).',
+  kita_berlin_label:'Tôi sống ở Berlin (Kita miễn phí)',kita_cost_label:'Chi phí Kita/tháng',
+  child_n:'Bé',elternzeit_split:'Chia Elternzeit',max_exceeded:'Tổng vượt quá 36 tháng tối đa',no_children:'Chưa thêm con nào',
+  already_own:'Đang sở hữu (trả thế chấp)',years_owned:'Số năm sở hữu',
+  retire_age_label:'Tuổi nghỉ hưu',pension_start_label:'Tuổi nhận lương hưu',salary_history:'Lịch sử lương (tính điểm hưu)',
+  add_period:'+ Thêm giai đoạn',ongoing:'đang tiếp',
+  nw_today:'Tài sản ròng hôm nay',tip_mc_success:'Xác suất tài sản thanh khoản > 0€ đến tuổi 90 qua 1.000 mô phỏng',
+  tip_median:'Kết quả trung vị: nửa tốt hơn, nửa kém hơn',tip_worst:'Phân vị 10: 90% trường hợp tốt hơn mức này',
+  tip_nw_today:'Tổng tài sản ròng hiện tại: tất cả tài sản trừ nợ',
+  strong:'Mạnh',moderate:'Trung bình',at_risk:'Rủi ro',
+  no_events:'Chưa có sự kiện nào được cấu hình.',liquid_label:'thanh khoản',liquid_nw_label:'Tài sản thanh khoản ở tuổi này',
+  peak_wealth:'Đỉnh tài sản',at_age_50:'Ở tuổi 50',
+  ins_peak:'Đỉnh tài sản €{0} ở tuổi {1} (năm {2})',ins_at50:'Thanh khoản: €{0} · Tổng: €{1}',
+  ins_income_detail:'Thu nhập năm: €{0} · Chi tiêu: €{1} · Tỉ lệ tiết kiệm: {2}%',
+  ins_retire_detail:'Khi nghỉ hưu (tuổi {0}): thanh khoản €{1} · tổng €{2}',
+  goes_negative:'Âm từ tuổi {0}',stays_positive:'Luôn dương',
+  baseline_label:'Chi cơ bản',children_label:'Con cái',surplus_label:'Thặng dư',
+  status_header:'Trạng thái',emergency:'Khẩn cấp',invest:'Đầu tư',property_bucket:'Bất động sản',
+  six_months_exp:'6 tháng chi phí',long_term_growth:'Tăng trưởng dài hạn',saving_status:'Đang tiết kiệm',down_payment:'Tiền đặt cọc',
+  met:'Đạt',gap_status:'Thiếu',ongoing_status:'Đang tiến hành',
+  action_transfer:'Tự động chuyển €{0}/tháng vào tài khoản đầu tư',action_emergency:'Bổ sung quỹ khẩn cấp — thiếu: €{0}',
+  action_elterngeld:'Nộp đơn Elterngeld ~3 tháng trước ngày dự sinh',action_pension_low:'Kiểm tra bảng hưu trí — điểm ({0}) có vẻ thấp',
+  action_savings_rate:'Tăng tỉ lệ tiết kiệm hoặc điều chỉnh giả định tăng trưởng',action_review:'Xem lại giả định mỗi quý',
+  act_cf_desc:'Thu nhập: €{0}/tháng · Chi tiêu: €{1}/tháng · Thặng dư: ',
+  you:'Bạn',partner:'Partner',person1:'Người 1',person2:'Người 2',
+  age_prefix:'Tuổi',year_prefix:'Năm',
+  ov_chart_title:'Tài sản theo thời gian',
+  ov_chart_tip:'Mỗi cột = tổng tài sản ở tuổi đó. Xanh ngọc = thanh khoản (tiền mặt, ETF, cổ phiếu). Tím = bất động sản.',
+  ov_spend_chart_title:'Chi tiêu hàng năm theo tuổi — Phân tích thành phần',
+  ov_spend_chart_tip:'Mỗi cột cho thấy tổng chi tiêu hàng năm ở tuổi đó, chia theo thành phần.',
+  ov_sp_baseline:'Sinh hoạt & Sức khỏe',ov_sp_children:'Con cái',ov_sp_housing:'Vay mua nhà',ov_sp_other:'Chi phí lớn / Đặc biệt',
+  ov_takeaway_pos:'Tài sản tăng đến đỉnh €{0} ở tuổi {1}, và duy trì dương đến tuổi {2}.',
+  ov_takeaway_neg:'Tài sản thanh khoản hết ở tuổi {0} ({1} năm sau nghỉ hưu). Sau đó bạn có thể cần bán hoặc thu nhỏ bất động sản để trang trải chi phí.',
+  ov_takeaway_early_neg:'Tài sản thanh khoản hết ở tuổi {0} (năm {1}) — trước cả khi nghỉ hưu! Cần giảm chi tiêu, tăng thu nhập, hoặc bán/thu nhỏ bất động sản.',
+  ov_takeaway_illiquid:'Đến tuổi {0}, tiền mặt chỉ đủ cho {1} năm chi tiêu — phần còn lại nằm trong bất động sản. Cần bán/thu nhỏ hoặc tích lũy thêm thanh khoản trước thời điểm đó.',
+  ov_nw_today:'Tài sản ròng hôm nay',ov_success_rate:'Tỉ lệ thành công',ov_money_lasts:'Tiền đủ đến',
+  ov_strong:'Mạnh',ov_moderate:'Trung bình',ov_at_risk:'Rủi ro',
+  ov_runway_inf:'∞ sau nghỉ hưu',ov_runway_yrs:'{0} năm sau khi nghỉ hưu ở tuổi {1}',ov_lasts_before_retire:'Tiền mặt hết trước khi nghỉ hưu!',ov_lasts_illiquid:'Tiền mặt thấp — tài sản nằm trong BĐS',
+  ov_explain_title:'Các con số này có nghĩa gì?',
+  ov_explain_nw:'Tất cả tài sản (tiền, đầu tư, BĐS) trừ nợ. Dòng bên dưới cho thấy tài sản ròng đang tăng hay giảm bao nhiêu mỗi năm.',
+  ov_explain_mc:'Chúng tôi mô phỏng 1.000 tương lai có thể xảy ra với lợi nhuận ngẫu nhiên. Tỉ lệ % cho thấy bao nhiêu tương lai bạn vẫn có tiền ở tuổi 90. Trên 80% = mạnh.',
+  ov_explain_mc_link:'Tìm hiểu thêm về Monte Carlo →',
+  ov_explain_lasts:'Dựa trên tiết kiệm và chi tiêu hiện tại: tuổi mà tài sản đầu tư chạm €0. "100+" nghĩa là không bao giờ hết.',
+  ov_hnwi:'HNWI',ov_millionaire:'Triệu phú',
+  ov_hnwi_age:'Tuổi {0}',ov_hnwi_never:'Chưa đạt',ov_hnwi_already:'Đã đạt!',
+  ov_explain_hnwi:'HNWI = tài sản thanh khoản (tiền mặt + đầu tư, không tính BĐS) vượt €1M sau khi trừ nợ. Đây là tuổi bạn vượt ngưỡng này lần đầu.',
+  ov_explain_mill:'Triệu phú = tổng tài sản ròng (tất cả tài sản bao gồm BĐS, trừ nợ) vượt €1M. Đây là tuổi bạn đạt mốc này.',
+  ov_nw_sub_grow:'Tăng €{0}/năm',ov_nw_sub_shrink:'Giảm €{0}/năm',
+  ov_nudge_mc:'Kế hoạch chỉ thành công trong {0}% của 1.000 mô phỏng. Hành động: tăng tiết kiệm, lùi nghỉ hưu 2-3 năm, hoặc chuyển tiền mặt sang tài sản tăng trưởng.',
+  ov_nudge_cash:'Tiền mặt chậm: €{0} ({1}% tài sản đầu tư) sinh lời thấp. Chuyển phần dư trên 6 tháng dự phòng sang ETF.',
+  ov_nudge_runway:'Thời gian sau hưu chỉ {0} năm. Mục tiêu 25+ năm. Thử: tiết kiệm thêm €{1}/tháng hoặc lùi tuổi hưu 2 năm.',
+  ov_nudge_healthy:'Tài chính ổn định. Xem lại hàng quý và tái cân bằng nếu tài sản lệch >10%.',
+  ov_learn_more:'Tìm hiểu thêm →',
+  ov_composition:'Cơ cấu tài sản hiện tại',ov_comp_future:'Sau 15 năm',ov_comp_asset:'Tài sản',ov_comp_type:'Loại',ov_comp_value:'Giá trị (EUR)',ov_comp_share:'Tỉ trọng',
+  th_monthly_spend:'Chi/tháng',
+  pj_depletion:'Tuổi cạn kiệt',pj_depletion_never:'Không bao giờ',pj_depletion_zero:'Thanh khoản chạm €0',pj_depletion_pos:'Luôn dương',
+  pj_fire:'Tiến độ FIRE',pj_fire_need:'Cần €{0} (25× chi tiêu năm)',
+  pj_chart_title:'Dự báo trọn đời',pj_chart_tip:'Xanh ngọc = tài sản thanh khoản. Tím = bất động sản.',
+  pj_whatif:'Giả định',
+  cf_savings_rate:'Tỉ lệ tiết kiệm',cf_annual_surplus:'Thặng dư ròng/năm',cf_cum_15yr:'Tích lũy cả đời',cf_best_yr:'Năm tốt nhất',cf_worst_yr:'Năm eo hẹp nhất',
+  cf_excellent:'Xuất sắc',cf_good:'Tốt — hướng tới 30%',cf_below:'Dưới mục tiêu',
+  cf_chart_title:'Thu nhập vs Chi tiêu (cả đời)',cf_chart_tip:'Đường vàng = thặng dư ròng. Di chuột lên cột để xem chi tiết. Badge đánh dấu sự kiện.',
+  cf_milestones:'Cột mốc cuộc đời',
+  pt_total_equity:'Tổng vốn BĐS',pt_market_val:'Giá trị thị trường',pt_remaining:'Dư nợ',pt_monthly:'Hàng tháng',
+  pt_yrs_remaining:'Còn {0} năm',pt_purchase_planned:'Mua dự kiến: năm {0} (tuổi {1})',
+  pt_empty:'Chưa thêm bất động sản nào.',pt_empty_sub:'Thêm ở panel bên trái để xem vốn, LTV và chi tiết khấu trừ.',
+  pt_properties:'{0} bất động sản',pt_properties_pl:'{0} bất động sản',
+  ins_smart_alerts:'Cảnh báo thông minh',
+  ins_strong_pos:'Tài chính vững mạnh',ins_strong_desc:'Tỉ lệ Monte Carlo là {0}%. Kế hoạch đang đúng hướng.',
+  ins_emergency_met:'Quỹ dự phòng đủ',ins_emergency_met_desc:'Bạn có 6+ tháng chi tiêu trong tài sản thanh khoản.',
+  ins_mc_below:'Monte Carlo dưới 80%',ins_mc_below_desc:'Tỉ lệ thành công {0}%. Cân nhắc tăng tiết kiệm hoặc điều chỉnh tuổi hưu.',
+  ins_cash_drag:'Tiền mặt chậm',ins_cash_drag_desc:'€{0} ({1}%) bằng tiền mặt. Cân nhắc đầu tư phần dư trên quỹ dự phòng.',
+  ins_pension_low:'Điểm hưu trí thấp',ins_pension_low_desc:'Bạn có {0} điểm. Người hưu trí trung bình cần ~40.',
+  ins_plan_risk:'Kế hoạch rủi ro',ins_plan_risk_desc:'Chỉ {0}% mô phỏng thành công. Khẩn cấp: tăng tiết kiệm hoặc lùi nghỉ hưu.',
+  ins_emergency_gap:'Thiếu quỹ dự phòng',ins_emergency_gap_desc:'Thiếu €{0}. Ưu tiên xây dựng 6 tháng chi tiêu.',
+  ins_early_depletion:'Rủi ro cạn kiệt sớm',ins_early_depletion_desc:'Thanh khoản chạm €0 ở tuổi {0}. Xem lại chi tiêu hoặc tuổi hưu.',
+  tab_method:'Phương pháp',
+  meth_title:'Dashboard hoạt động như thế nào',
+  meth_intro:'Trang này giải thích các giả định, mô hình và công thức chính đằng sau các dự báo. Tất cả con số đều là ước tính — không phải tư vấn tài chính.',
+  meth_child_title:'Giả định chi phí nuôi con',
+  meth_child_desc:'Chi phí hàng tháng cho mỗi con thay đổi theo độ tuổi. Đây là mức trung bình cho Đức: nhà trẻ/trường học, ăn uống, quần áo, hoạt động ngoại khóa, và chi phí sinh hoạt đại học. Chúng tăng hàng năm theo tỉ lệ lạm phát chi tiêu.',
+  meth_age_range:'Độ tuổi',meth_monthly_cost:'Chi phí/tháng',meth_includes:'Bao gồm',
+  meth_child_0:'Đồ sơ sinh (nôi, xe đẩy, ghế ô tô) + tã, sữa, bác sĩ',
+  meth_child_1:'Nhà trẻ, ăn uống, quần áo, đồ chơi',
+  meth_child_3:'Mẫu giáo/trường, chăm sóc sau giờ học, ăn uống',
+  meth_child_6:'Đồ dùng học tập, thể thao/âm nhạc, quần áo',
+  meth_child_10:'Trường học, sở thích, thiết bị điện tử, ăn uống tăng',
+  meth_child_18:'Thuê phòng đại học, ăn uống, đi lại, học phí',
+  meth_child_note:'Chi phí tính cho mỗi con và tăng theo lạm phát. Chi phí Kita (0–6 tuổi) được cộng thêm: €0 ở Berlin hoặc số tiền bạn nhập. Sau 22 tuổi, con rời khỏi mô hình.',
+  meth_mc_title:'Mô phỏng Monte Carlo',
+  meth_mc_desc:'Chỉ số "Tỉ lệ thành công" sử dụng phương pháp Monte Carlo: thay vì giả định lợi nhuận cố định, nó mô phỏng 1.000 kịch bản tương lai ngẫu nhiên. Kết quả là xác suất tài sản thanh khoản duy trì trên €0 đến tuổi 90.',
+  meth_mc_how:'Cách hoạt động:',
+  meth_mc_step1:'Mỗi tài sản tăng theo lợi nhuận kỳ vọng CỘNG một cú sốc ngẫu nhiên từ phân phối chuẩn (trung bình = 0, độ lệch chuẩn = biến động tài sản).',
+  meth_mc_step2:'Thu nhập, chi tiêu và phân bổ thặng dư tuân theo cùng quy tắc như dự báo xác định.',
+  meth_mc_step3:'Quá trình được lặp lại 1.000 lần, mỗi lần với kết quả thị trường ngẫu nhiên khác nhau.',
+  meth_mc_step4:'Tỉ lệ thành công = % mô phỏng mà tài sản thanh khoản không bao giờ xuống dưới €0 trước tuổi 90.',
+  meth_mc_vol_title:'Giả định biến động theo loại tài sản:',
+  meth_asset_type:'Loại tài sản',meth_volatility:'Biến động/năm',meth_explanation:'Giải thích',
+  meth_vol_cash:'Rủi ro rất thấp — tài khoản tiết kiệm, tiền gửi kỳ hạn',
+  meth_vol_bonds:'Trung bình — trái phiếu chính phủ và doanh nghiệp',
+  meth_vol_etf:'Chỉ số cổ phiếu toàn cầu điển hình (ví dụ MSCI World dài hạn)',
+  meth_vol_crypto:'Biến động cao — Bitcoin, Ethereum',
+  meth_mc_note:'Trung vị và phân vị 10 được tính bằng cách sắp xếp 1.000 giá trị cuối cùng. Tỉ lệ thành công cao hơn = khả năng chống chịu tốt hơn trước các năm thị trường xấu.',
+  meth_proj_title:'Công cụ dự báo',
+  meth_proj_desc:'Dự báo từng năm tính toán:',
+  meth_proj_1:'Thu nhập: mỗi nguồn tăng theo tỉ lệ tăng trưởng, giảm trong thời gian nghỉ phép. Thuế Đức áp dụng nếu được bật.',
+  meth_proj_2:'Chi tiêu: cơ bản × 12 × hệ số lạm phát, cộng chi phí con, thế chấp, khoản đặc biệt.',
+  meth_proj_3:'Thặng dư ròng: thu nhập trừ chi tiêu. Dương → phân bổ theo slider. Âm → rút từ tài sản tăng trưởng thấp nhất trước.',
+  meth_proj_4:'Tăng trưởng tài sản: mỗi nhóm tăng hàng năm theo tỉ lệ đã khai.',
+  meth_proj_5:'Bất động sản: vốn chủ = giá trị thị trường (tăng trưởng) trừ dư nợ thế chấp (công thức vay trả dần).',
+  meth_pension_title:'Ước tính lương hưu Đức',
+  meth_pension_desc:'Lương hưu được ước tính qua hệ thống Entgeltpunkte. Mỗi năm làm việc = điểm = lương gộp / lương trung bình (giới hạn ~€90k). Khi nhận hưu: lương tháng = tổng điểm × giá trị hiện tại (€39,32). Đây là ước tính đơn giản.',
+  meth_disclaimer_title:'Tuyên bố miễn trừ',
+  meth_disclaimer:'Công cụ này chỉ dùng cho mục đích giáo dục và lập kế hoạch. Đây không phải tư vấn tài chính. Các giả định được đơn giản hóa và có thể không phản ánh tình hình thuế, lợi nhuận đầu tư hoặc hoàn cảnh sống thực tế của bạn. Luôn tham khảo cố vấn tài chính.',
+  ft_made:'Được tạo với 💛 bởi',ft_feedback:'Góp ý?',ft_coffee:'Mua cho mình ly cà phê',
+}};
+
+// ============ DEFAULTS ============
+const DEFAULTS={
+  name:'',partnerName:'',birthYear:1994,partnerBirthYear:1992,
+  assets:[{id:1,name:'Savings',value:20000,growth:2.5,type:'cash',ccy:'EUR',allocPct:20},{id:2,name:'ETF Portfolio',value:60000,growth:3,type:'etf',ccy:'EUR',allocPct:60}],
+  incomeStreams:[{id:1,label:'Your Salary',monthly:55000,frequency:'annual',startYear:2022,endYear:null,growthPct:3,deTax:true,ccy:'EUR',takesLeave:true},{id:2,label:'Partner Salary',monthly:50000,frequency:'annual',startYear:2020,endYear:null,growthPct:3,deTax:true,ccy:'EUR',takesLeave:false}],
+  baselineSpend:3800,spendInflation:2.5,adHocSpending:[{id:3,label:'Wedding',amount:200000000,startYear:2027,frequency:'one-off',ccy:'VND'}],
+  children:[{id:4,birthYear:2028,leaveMonths1:12,leaveMonths2:2}],berlinKita:true,kitaCost:0,properties:[],
+  retireAge:67,retireAgePartner:67,pensionDrawAge:67,pensionDrawAgePartner:67,
+  pensionPeriodsYou:[{id:1,label:'Current job',salary:65000,startYear:2020,endYear:null}],
+  pensionPeriodsPartner:[{id:2,label:'Current job',salary:58000,startYear:2018,endYear:null}],
+  darkMode:false,lang:'en',wizardDone:false
+};
+
+// ============ HELPERS ============
+const fmt=n=>{if(n==null||isNaN(n))return'0';return Math.round(n).toLocaleString('de-DE');};
+const fmtK=n=>{if(n==null||isNaN(n))return'0';if(Math.abs(n)>=1e6)return(n/1e6).toFixed(1)+'M';if(Math.abs(n)>=1000)return Math.round(n/1000)+'k';return Math.round(n).toString();};
+const fmtE=n=>'€'+fmtK(n);
+let _nid=100;const genId=()=>++_nid;
+
+function NumInput({value,onChange,step,...props}){
+  const [editing,setEditing]=React.useState(false);
+  const [raw,setRaw]=React.useState('');
+  const startEdit=()=>{setEditing(true);setRaw(value===0?'':String(value));};
+  const endEdit=()=>{setEditing(false);const v=raw===''?0:parseFloat(raw);if(!isNaN(v))onChange(v);};
+  if(editing) return <input type="text" value={raw} onChange={e=>setRaw(e.target.value)} onBlur={endEdit} onKeyDown={e=>{if(e.key==='Enter')endEdit();}} autoFocus {...props}/>;
+  return <div className="num-display" onClick={startEdit} tabIndex={0} onFocus={startEdit}>{value===0?<span style={{color:'var(--grey)'}}>0</span>:fmt(value)}</div>;
+}
+
+function Card({title,emoji,children,defaultOpen=false,onAdd,addLabel,tip}){
+  const [open,setOpen]=React.useState(defaultOpen);
+  return(
+    <div className="card">
+      <div className="card-header" onClick={()=>setOpen(!open)}>
+        <h3>{emoji} {title}</h3>
+        <div className="header-right">
+          {onAdd && <button className="add-btn" onClick={e=>{e.stopPropagation();onAdd();if(!open)setOpen(true);}}>{addLabel||'+ Add'}</button>}
+          <span className={'chevron'+(open?' open':'')}>{open?'▲':'▼'}</span>
+        </div>
+      </div>
+      <div className={'card-body'+(open?'':' collapsed')}>
+        {tip && <div className="section-tip">{tip}</div>}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ============ PROJECTION ENGINE ============
+function calcTotalPoints(periods,retireYear){
+  let total=0;
+  periods.forEach(p=>{
+    const start=p.startYear||CUR_YR;
+    const end=Math.min(p.endYear||retireYear||CUR_YR+40, retireYear||CUR_YR+40);
+    const yrs=Math.max(0,end-start);
+    const pts=Math.min((p.salary||0)/NATIONAL_AVG,2.1);
+    total+=pts*yrs;
+  });
+  return total;
+}
+
+function buildProjection(s){
+  const by=s.birthYear||1994,pby=s.partnerBirthYear||1992;
+  const startAge=CUR_YR-by;const data=[];
+  let nonLiquid=0;
+  // Track each liquid asset bucket separately for accurate per-asset growth
+  const buckets=[];
+  s.assets.forEach(a=>{const v=toEUR(a.value,a.ccy||'EUR');if(a.type==='property')nonLiquid+=v;else buckets.push({name:a.label||a.name||a.type,value:v,growth:(a.growth||0)/100,allocPct:a.allocPct||0});});
+  const ptsYouTotal=calcTotalPoints(s.pensionPeriodsYou||[],by+(s.retireAge||67));
+  const ptsPartnerTotal=calcTotalPoints(s.pensionPeriodsPartner||[],pby+(s.retireAgePartner||67));
+
+  for(let age=startAge;age<=END_AGE;age++){
+    const year=by+age;const pAge=year-pby;
+    // For current year, record snapshot before any growth/cash flow
+    if(age===startAge){
+      const liquid0=buckets.reduce((sum,b)=>sum+b.value,0);
+      const assetBreakdown0=buckets.map(b=>({name:b.name,value:Math.round(b.value)}));
+      const propBreakdown0=[];let propVal0=nonLiquid;
+      s.properties.forEach(p=>{const py=p.owned?CUR_YR-(p.yearsOwned||0):by+(p.purchaseAge||45);if(year>=py){const mktVal=(p.price||0)*Math.pow(1+(p.growthPct||2)/100,year-py);const loan=(p.price||0)*(1-(p.downPct||20)/100);const r=(p.rate||3.5)/100/12;const n=(p.term||25)*12;const yrsElapsed=year-py;const pmtsMade=Math.min(yrsElapsed*12,n);let remaining=0;if(pmtsMade<n&&r>0){remaining=loan*Math.pow(1+r,pmtsMade)-(loan*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1))*((Math.pow(1+r,pmtsMade)-1)/r);}const eq=mktVal-Math.max(0,remaining);propVal0+=eq;propBreakdown0.push({name:p.label||'Property',value:Math.round(eq)});}});
+      let event0='';if(age===s.retireAge)event0='🏖️ You retire';
+      data.push({age,year,partnerAge:pAge,liquidAssets:Math.round(liquid0),nonLiquidAssets:Math.round(propVal0),totalNetWorth:Math.round(liquid0+propVal0),totalIncome:0,totalSpend:0,netSaved:0,event:event0,assetBreakdown:assetBreakdown0,propBreakdown:propBreakdown0});
+      continue;
+    }
+    const retired=age>=s.retireAge;
+    let totalInc=0;const incBreakdown=[];
+    s.incomeStreams.forEach((inc,idx)=>{
+      const sy=inc.startYear||CUR_YR;
+      const ey=inc.endYear||(idx===0?by+s.retireAge:idx===1?pby+s.retireAgePartner:by+s.retireAge);
+      if(year<sy||year>ey)return;
+      let onMat=false;
+      if(inc.takesLeave){s.children.forEach(ch=>{const cby=ch.birthYear||(by+(ch.motherAge||32));const lm=idx===0?(ch.leaveMonths1||12):idx===1?(ch.leaveMonths2||0):(ch.leaveMonths1||12);const my=Math.ceil(lm/12);if(lm>0&&year>=cby&&year<cby+my)onMat=true;});}
+      const elapsed=Math.max(0,year-sy);
+      const g=Math.pow(1+(inc.growthPct||0)/100,Math.floor(elapsed/2));
+      const freq=inc.frequency||'annual';const mult=freq==='monthly'?12:freq==='quarterly'?4:freq==='one-off'?1:1;
+      let annual=onMat?ELTERNGELD*12:toEUR(inc.monthly,inc.ccy||'EUR')*g*mult;
+      if(freq==='one-off'&&year!==inc.startYear)annual=0;
+      if(inc.deTax)annual*=(1-DE_TAX_RATE);
+      if(annual>0)incBreakdown.push({name:inc.label||'Income '+(idx+1),value:Math.round(annual)});
+      totalInc+=annual;
+    });
+    s.children.forEach(ch=>{const cby=ch.birthYear||(by+(ch.motherAge||32));const ca=year-cby;if(ca>=0&&ca<18){totalInc+=KINDERGELD*12;incBreakdown.push({name:'Kindergeld',value:Math.round(KINDERGELD*12)});}});
+    let pension=0;
+    if(age>=s.pensionDrawAge){const ed=s.pensionDrawAge<67?(67-s.pensionDrawAge)*12*0.003:0;pension+=ptsYouTotal*PENSION_POINT_VALUE*12*(1-ed)*0.8;}
+    if(pAge>=s.pensionDrawAgePartner){const ed=s.pensionDrawAgePartner<67?(67-s.pensionDrawAgePartner)*12*0.003:0;pension+=ptsPartnerTotal*PENSION_POINT_VALUE*12*(1-ed)*0.8;}
+    if(retired){totalInc+=pension;if(pension>0)incBreakdown.push({name:'Pension',value:Math.round(pension)});}
+    const inflF=Math.pow(1+(s.spendInflation||0)/100,year-CUR_YR);
+    let totalSp=toEUR(s.baselineSpend,s.baselineCcy||'EUR')*12*inflF;const spBreakdown=[{name:'Baseline',value:Math.round(toEUR(s.baselineSpend,s.baselineCcy||'EUR')*12*inflF)}];
+    s.children.forEach(ch=>{const cby=ch.birthYear||(by+(ch.motherAge||32));const ca=year-cby;if(ca>=0&&ca<=22){let mc=ca<1?1100:ca<3?700:ca<6?750:ca<10?800:ca<18?900:1000;if(ca<6){const kita=s.berlinKita?0:(s.kitaCost||450);mc+=kita;}totalSp+=mc*12*inflF;spBreakdown.push({name:'Child (age '+ca+')',value:Math.round(mc*12*inflF)});}});
+    (s.adHocSpending||[]).forEach(item=>{const sy=item.startYear||CUR_YR;let v=0;if(item.frequency==='one-off'&&year===sy)v=toEUR(item.amount,item.ccy||'EUR');else if(item.frequency==='monthly'&&year>=sy)v=toEUR(item.amount,item.ccy||'EUR')*12*inflF;else if(item.frequency==='quarterly'&&year>=sy)v=toEUR(item.amount,item.ccy||'EUR')*4*inflF;else if(item.frequency==='annual'&&year>=sy)v=toEUR(item.amount,item.ccy||'EUR')*inflF;if(v>0){totalSp+=v;spBreakdown.push({name:item.label||'Ad-hoc',value:Math.round(v)});}});
+    s.properties.forEach(p=>{const py=p.owned?CUR_YR-(p.yearsOwned||0):by+(p.purchaseAge||45);const tm=p.term||25;if(year>=py&&year<py+tm){const loan=(p.price||0)*(1-(p.downPct||20)/100);const r=(p.rate||3.5)/100/12;const n=tm*12;const pmt=(r>0?loan*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1):loan/n)*12;totalSp+=pmt;spBreakdown.push({name:(p.label||'Mortgage'),value:Math.round(pmt)});}if(year===py&&!p.owned){const neben=((p.grunderwerbPct||6)+(p.notarPct||1.5)+(p.maklerPct||3.57))/100;const dpn=(p.price||0)*((p.downPct||20)/100+neben);totalSp+=dpn;spBreakdown.push({name:(p.label||'Property')+' purchase',value:Math.round(dpn)});}});
+    if(retired&&age<s.pensionDrawAge){totalSp+=PHI_MO*12;spBreakdown.push({name:'Health insurance',value:Math.round(PHI_MO*12)});}
+    const net=totalInc-totalSp;
+    // Grow each bucket individually, then apply tax on total gains
+    let totalGain=0;
+    buckets.forEach(b=>{const g=b.value*b.growth;totalGain+=Math.max(0,g);b.value=Math.max(0,b.value+g);});
+    const tax=Math.max(0,totalGain-SPARERPAUSCHBETRAG)*DE_TAX_RATE;
+    const netCashFlow=net-tax;
+    // Surplus split by user-defined allocPct per asset; remainder to cash buffer. Deficit drawn from lowest-growth first.
+    if(netCashFlow>=0){
+      let totalAlloc=buckets.reduce((s,b)=>s+(b.allocPct||0),0);
+      if(totalAlloc>100)totalAlloc=100;
+      buckets.forEach(b=>{if(b.allocPct>0)b.value+=netCashFlow*(b.allocPct/100);});
+      const cashPortion=netCashFlow*Math.max(0,100-totalAlloc)/100;
+      if(cashPortion>0){const cashBuf=buckets.find(b=>b.name==='💰 Cash Buffer');if(cashBuf)cashBuf.value+=cashPortion;else buckets.push({name:'💰 Cash Buffer',value:cashPortion,growth:0.01,allocPct:0});}
+    } else {
+      let deficit=-netCashFlow;
+      const sorted=[...buckets].sort((a,b)=>a.growth-b.growth);
+      for(const b of sorted){if(deficit<=0)break;const draw=Math.min(b.value,deficit);b.value-=draw;deficit-=draw;}
+      // If deficit remains after draining all liquid buckets, track it as negative liquid
+      if(deficit>0){const cashBuf=buckets.find(b=>b.name==='💰 Cash Buffer');if(cashBuf)cashBuf.value-=deficit;else buckets.push({name:'💰 Cash Buffer',value:-deficit,growth:0,allocPct:0});}
+    }
+    let liquid=buckets.reduce((s,b)=>s+b.value,0);
+    let propVal=nonLiquid;
+    s.properties.forEach(p=>{const py=p.owned?CUR_YR-(p.yearsOwned||0):by+(p.purchaseAge||45);if(year>=py){const mktVal=(p.price||0)*Math.pow(1+(p.growthPct||2)/100,year-py);const loan=(p.price||0)*(1-(p.downPct||20)/100);const r=(p.rate||3.5)/100/12;const n=(p.term||25)*12;const yrsElapsed=year-py;const pmtsMade=Math.min(yrsElapsed*12,n);let remaining=0;if(pmtsMade<n&&r>0){remaining=loan*Math.pow(1+r,pmtsMade)-(loan*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1))*((Math.pow(1+r,pmtsMade)-1)/r);}propVal+=mktVal-Math.max(0,remaining);}});
+    let event='';
+    s.children.forEach((ch,i)=>{const cby=ch.birthYear||(by+(ch.motherAge||32));if(year===cby&&year>=CUR_YR)event='👶 '+(ch.label||'Child '+(i+1)+' born');});
+    s.properties.forEach((p,i)=>{const py=p.owned?CUR_YR-(p.yearsOwned||0):by+(p.purchaseAge||45);if(year===py&&!p.owned)event='🏠 '+(p.label||'Property '+(i+1));});
+    // Ad-hoc spending events (one-off items > €5k or first year of recurring)
+    if(!event)(s.adHocSpending||[]).forEach(a=>{if(!event&&a.amount&&toEUR(a.amount,a.ccy||'EUR')>=5000){const sy=a.startYear||CUR_YR;const freq=a.frequency||'one-off';if(freq==='one-off'&&year===sy)event='💸 '+(a.label||'Big expense');else if(freq!=='one-off'&&year===sy)event='📌 '+(a.label||'Recurring start');}});
+    if(age===s.retireAge)event='🏖️ You retire';
+    else if(pAge===s.retireAgePartner&&!event)event='🏖️ Partner retires';
+    if(age===s.pensionDrawAge&&!event)event='💰 Pension starts';
+    const assetBreakdown=buckets.map(b=>({name:b.name,value:Math.round(b.value)}));
+    const propBreakdown=[];
+    s.properties.forEach(p=>{const py=p.owned?CUR_YR-(p.yearsOwned||0):by+(p.purchaseAge||45);if(year>=py){const mktVal=(p.price||0)*Math.pow(1+(p.growthPct||2)/100,year-py);const loan=(p.price||0)*(1-(p.downPct||20)/100);const r=(p.rate||3.5)/100/12;const n=(p.term||25)*12;const yrsElapsed=year-py;const pmtsMade=Math.min(yrsElapsed*12,n);let remaining=0;if(pmtsMade<n&&r>0){remaining=loan*Math.pow(1+r,pmtsMade)-(loan*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1))*((Math.pow(1+r,pmtsMade)-1)/r);}propBreakdown.push({name:p.label||'Property',value:Math.round(mktVal-Math.max(0,remaining))});}});
+    data.push({age,year,partnerAge:pAge,liquidAssets:Math.round(liquid),nonLiquidAssets:Math.round(propVal),totalNetWorth:Math.round(liquid+propVal),totalIncome:Math.round(totalInc),totalSpend:Math.round(totalSp),netSaved:Math.round(net),event,assetBreakdown,propBreakdown,incomeBreakdown:incBreakdown,spendBreakdown:spBreakdown});
+  }
+  return data;
+}
+
+// ============ MONTE CARLO ============
+function runMC(s,runs=1000){
+  const by=s.birthYear||1994,pby=s.partnerBirthYear||1992,startAge=CUR_YR-by,target=90;
+  const volByType={cash:0.02,bonds:0.05,etf:0.15,stocks:0.2,crypto:0.4,dividends:0.12,other:0.15};
+  // Build per-bucket model: each asset grows independently with its own mean & vol
+  const initBuckets=[];
+  s.assets.forEach(a=>{if(a.type!=='property'){initBuckets.push({value:toEUR(a.value,a.ccy||'EUR'),mean:(a.growth||0)/100,vol:volByType[a.type]||0.15,allocPct:a.allocPct||0});}});
+  const ptsY=calcTotalPoints(s.pensionPeriodsYou||[],by+(s.retireAge||67));
+  const ptsP=calcTotalPoints(s.pensionPeriodsPartner||[],(s.partnerBirthYear||1992)+(s.retireAgePartner||67));
+  let seed=42;
+  const rand=()=>{seed=(seed*1664525+1013904223)&0xFFFFFFFF;return(seed>>>0)/4294967296;};
+  const rn=()=>{const u=rand(),v=rand();return Math.sqrt(-2*Math.log(u||0.001))*Math.cos(2*Math.PI*v);};
+  let succ=0,comf=0;const finals=[];
+  for(let run=0;run<runs;run++){
+    // Each run: clone buckets
+    const buckets=initBuckets.map(b=>({...b}));
+    let ok=true;
+    for(let age=startAge;age<=target;age++){
+      const year=by+age;let inc=0;
+      s.incomeStreams.forEach((st,idx)=>{const sy=st.startYear||CUR_YR;const ey=st.endYear||(idx===0?by+s.retireAge:idx===1?(s.partnerBirthYear||1992)+s.retireAgePartner:by+s.retireAge);if(year>=sy&&year<=ey){let onMat=false;if(st.takesLeave){s.children.forEach(ch=>{const cby=ch.birthYear||(by+(ch.motherAge||32));const lm=idx===0?(ch.leaveMonths1||12):idx===1?(ch.leaveMonths2||0):(ch.leaveMonths1||12);const my=Math.ceil(lm/12);if(lm>0&&year>=cby&&year<cby+my)onMat=true;});}const g=Math.pow(1+(st.growthPct||0)/100,Math.floor(Math.max(0,year-sy)/2));const freq=st.frequency||'annual';const mult=freq==='monthly'?12:freq==='quarterly'?4:freq==='one-off'?1:1;let annual=onMat?ELTERNGELD*12:toEUR(st.monthly,st.ccy||'EUR')*g*mult;if(freq==='one-off'&&year!==sy)annual=0;if(st.deTax)annual*=(1-DE_TAX_RATE);inc+=annual;}});
+      s.children.forEach(ch=>{const ca=year-(ch.birthYear||(by+(ch.motherAge||32)));if(ca>=0&&ca<18)inc+=KINDERGELD*12;});
+      if(age>=(s.pensionDrawAge||67))inc+=ptsY*PENSION_POINT_VALUE*12*0.8;
+      const pAge=year-pby;if(pAge>=(s.pensionDrawAgePartner||67))inc+=ptsP*PENSION_POINT_VALUE*12*0.8;
+      const inflF=Math.pow(1+(s.spendInflation||0)/100,year-CUR_YR);
+      let sp=toEUR(s.baselineSpend,s.baselineCcy||'EUR')*12*inflF;
+      if(age>=s.retireAge&&age<(s.pensionDrawAge||67))sp+=PHI_MO*12;
+      s.children.forEach(ch=>{const ca=year-(ch.birthYear||(by+(ch.motherAge||32)));if(ca>=0&&ca<=22)sp+=700*12*inflF;});
+      s.properties.forEach(p=>{const py=p.owned?CUR_YR-(p.yearsOwned||0):by+(p.purchaseAge||45);const tm=p.term||25;if(year>=py&&year<py+tm){const l=(p.price||0)*(1-(p.downPct||20)/100);const r=(p.rate||3.5)/100/12;const n=tm*12;sp+=(r>0?l*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1):l/n)*12;}if(year===py&&!p.owned){const neben=((p.grunderwerbPct||6)+(p.notarPct||1.5)+(p.maklerPct||3.57))/100;sp+=(p.price||0)*((p.downPct||20)/100+neben);}});
+      // Grow each bucket independently with its own random return
+      let totalGain=0;
+      buckets.forEach(b=>{const ret=b.mean+b.vol*rn();const gain=b.value*ret;totalGain+=Math.max(0,gain);b.value=Math.max(0,b.value+gain);});
+      const tax=Math.max(0,totalGain-SPARERPAUSCHBETRAG)*DE_TAX_RATE;
+      const netCashFlow=inc-sp-tax;
+      // Apply net cash flow: split by allocPct per bucket, rest to cash buffer
+      if(netCashFlow>=0){
+        let totalAlloc=buckets.reduce((s,b)=>s+(b.allocPct||0),0);
+        if(totalAlloc>100)totalAlloc=100;
+        buckets.forEach(b=>{if(b.allocPct>0)b.value+=netCashFlow*(b.allocPct/100);});
+        const cashPortion=netCashFlow*Math.max(0,100-totalAlloc)/100;
+        if(cashPortion>0){const cb=buckets.find(b=>b.mean<=0.01&&b.vol<=0.01);if(cb)cb.value+=cashPortion;else buckets.push({value:cashPortion,mean:0.01,vol:0.005,allocPct:0});}
+      } else {
+        let deficit=-netCashFlow;
+        const sorted=[...buckets].sort((a,b)=>a.mean-b.mean);
+        for(const b of sorted){if(deficit<=0)break;const draw=Math.min(b.value,deficit);b.value-=draw;deficit-=draw;}
+        if(deficit>0){ok=false;break;}
+      }
+      const liq=buckets.reduce((sum,b)=>sum+b.value,0);
+      if(liq<0){ok=false;break;}
+    }
+    const finalLiq=buckets.reduce((sum,b)=>sum+b.value,0);
+    if(ok)succ++;if(ok&&finalLiq>(s.baselineSpend||2000)*24)comf++;finals.push(finalLiq);
+  }
+  finals.sort((a,b)=>a-b);
+  return{successRate:Math.round(succ/runs*100),comfortableRate:Math.round(comf/runs*100),median:Math.round(finals[Math.floor(runs/2)]),worst10:Math.round(finals[Math.floor(runs*0.1)])};
+}
+
+// ============ WIZARD COMPONENT ============
+function Wizard({onComplete,t}){
+  const [step,setStep]=React.useState(0);
+  const [vals,setVals]=React.useState({name:'',partnerName:'',income1:55000,income2:50000,spend:3800,savings:70000,wantKids:'yes'});
+  const up=(k,v)=>setVals({...vals,[k]:v});
+  const next=()=>{if(step<4)setStep(step+1);else onComplete(vals);};
+  const kd=e=>{if(e.key==='Enter'){e.preventDefault();next();}};
+  const steps=[
+    <div key={0}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s1')}</p><input className="wizard-input" onKeyDown={kd} placeholder={t('your_name')} value={vals.name} onChange={e=>up('name',e.target.value)}/><input className="wizard-input" onKeyDown={kd} placeholder={t('partner_name')} value={vals.partnerName} onChange={e=>up('partnerName',e.target.value)}/></div>,
+    <div key={1}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s2')}</p><label style={{fontSize:'11px',color:'var(--grey)'}}>👤 {vals.name||t('person1')}</label><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.income1||''} onChange={e=>up('income1',+e.target.value)}/><label style={{fontSize:'11px',color:'var(--grey)',marginTop:6,display:'block'}}>👤 {vals.partnerName||t('person2')}</label><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.income2||''} onChange={e=>up('income2',+e.target.value)}/></div>,
+    <div key={2}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s3')}</p><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.spend||''} onChange={e=>up('spend',+e.target.value)}/></div>,
+    <div key={3}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s4')}</p><input className="wizard-input" onKeyDown={kd} type="number" placeholder="€" value={vals.savings||''} onChange={e=>up('savings',+e.target.value)}/></div>,
+    <div key={4}><p style={{fontWeight:600,marginBottom:12}}>{t('wiz_s5')}</p><div style={{display:'flex',gap:8,justifyContent:'center'}}>{[['yes',t('wiz_yes')],['no',t('wiz_no')],['not sure yet',t('wiz_notsure')]].map(([k,lbl])=><button key={k} className={'btn '+(vals.wantKids===k?'btn-teal':'btn-outline')} onClick={()=>up('wantKids',k)}>{lbl}</button>)}</div></div>,
+  ];
+  const finish=()=>{onComplete(vals);};
+  return(
+    <div className="wizard-overlay" onClick={e=>{if(e.target===e.currentTarget)finish();}}>
+      <div className="wizard-card">
+        <h2>{t('wiz_title')} 👋</h2>
+        <p>{t('wiz_sub')}</p>
+        <div className="wizard-steps">{[0,1,2,3,4].map(i=><div key={i} className={'wizard-step'+(i===step?' active':'')}/>)}</div>
+        {steps[step]}
+        <div style={{marginTop:16}}>
+          {step<4?<button className="wizard-btn" onClick={next}>{t('wiz_next')}</button>:<button className="wizard-btn" onClick={()=>onComplete(vals)}>{t('wiz_done')}</button>}
+        </div>
+        <button className="wizard-skip" onClick={finish}>{t('wiz_skip')}</button>
+      </div>
+    </div>
+  );
+}
+
+// ============ ANIMATED METRIC ============
+function AnimMetric({value,label,format,color,sub,tip}){
+  const ref=React.useRef(null);
+  const prevRef=React.useRef(value);
+  React.useEffect(()=>{
+    if(!ref.current||prevRef.current===value)return;
+    const el=ref.current;
+    el.classList.add('counting');
+    const start=prevRef.current,end=value,t0=performance.now();
+    const dur=600;
+    const animate=(now)=>{
+      const p=Math.min((now-t0)/dur,1);
+      const eased=1-Math.pow(1-p,3);
+      const cur=Math.round(start+(end-start)*eased);
+      el.textContent=format?format(cur):fmtK(cur);
+      if(p<1)requestAnimationFrame(animate);else{el.classList.remove('counting');prevRef.current=value;}
+    };
+    requestAnimationFrame(animate);
+  },[value]);
+  React.useEffect(()=>{prevRef.current=value;},[]);
+  return(
+    <div className="metric" title={tip||''}>
+      <div className="metric-label">{label}</div>
+      <div className="metric-value" ref={ref} style={color?{color}:{}}>{format?format(value):fmtK(value)}</div>
+      {sub && <div className="metric-sub">{sub}</div>}
+    </div>
+  );
+}
+
+// ============ APP ============
+function App(){
+  const saved=React.useMemo(()=>{try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):null;}catch(e){return null;}},[]);
+  const g=k=>saved&&saved[k]!==undefined?saved[k]:DEFAULTS[k];
+
+  const [name,setName]=React.useState(g('name'));
+  const [partnerName,setPartnerName]=React.useState(g('partnerName'));
+  const [birthYear,setBirthYear]=React.useState(g('birthYear'));
+  const [partnerBirthYear,setPartnerBirthYear]=React.useState(g('partnerBirthYear'));
+  const [assets,setAssets]=React.useState(g('assets'));
+  const [incomeStreams,setIncomeStreams]=React.useState(g('incomeStreams'));
+  const [baselineSpend,setBaselineSpend]=React.useState(g('baselineSpend'));
+  const [spendInflation,setSpendInflation]=React.useState(g('spendInflation'));
+  const [adHocSpending,setAdHocSpending]=React.useState(g('adHocSpending'));
+  const [children,setChildren]=React.useState(g('children'));
+  const [berlinKita,setBerlinKita]=React.useState(g('berlinKita'));
+  const [kitaCost,setKitaCost]=React.useState(g('kitaCost'));
+  const [properties,setProperties]=React.useState(g('properties'));
+  const [retireAge,setRetireAge]=React.useState(g('retireAge'));
+  const [retireAgePartner,setRetireAgePartner]=React.useState(g('retireAgePartner'));
+  const [pensionDrawAge,setPensionDrawAge]=React.useState(g('pensionDrawAge'));
+  const [pensionDrawAgePartner,setPensionDrawAgePartner]=React.useState(g('pensionDrawAgePartner'));
+  const [pensionPeriodsYou,setPensionPeriodsYou]=React.useState(g('pensionPeriodsYou'));
+  const [pensionPeriodsPartner,setPensionPeriodsPartner]=React.useState(g('pensionPeriodsPartner'));
+  const [darkMode,setDarkMode]=React.useState(g('darkMode'));
+  const [showLegend,setShowLegend]=React.useState(false);
+  const [lang,setLang]=React.useState(g('lang'));
+  const [activeTab,setActiveTab]=React.useState('overview');
+  const [wizardDone,setWizardDone]=React.useState(g('wizardDone'));
+  const [mobileOpen,setMobileOpen]=React.useState(false);
+  const [panelOpen,setPanelOpen]=React.useState(true);
+  const [barHidden,setBarHidden]=React.useState(false);
+  const lastScrollY=React.useRef(0);
+  const rightPanelRef=React.useRef(null);
+  const [kpiOpen,setKpiOpen]=React.useState('');
+
+  const t=k=>(T[lang]&&T[lang][k])||T.en[k]||k;
+
+  // Persist
+  React.useEffect(()=>{
+    const st={name,partnerName,birthYear,partnerBirthYear,assets,incomeStreams,baselineSpend,spendInflation,adHocSpending,children,berlinKita,kitaCost,properties,retireAge,retireAgePartner,pensionDrawAge,pensionDrawAgePartner,pensionPeriodsYou,pensionPeriodsPartner,darkMode,lang,wizardDone};
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(st));
+    document.documentElement.setAttribute('data-theme',darkMode?'dark':'light');
+  });
+
+  // Hide summary bar on scroll down, show on scroll up
+  React.useEffect(()=>{
+    const el=rightPanelRef.current;
+    if(!el)return;
+    const onScroll=()=>{
+      const y=el.scrollTop;
+      if(y>80&&y>lastScrollY.current+10)setBarHidden(true);
+      else if(y<=5)setBarHidden(false);
+      lastScrollY.current=y;
+    };
+    el.addEventListener('scroll',onScroll,{passive:true});
+    return()=>el.removeEventListener('scroll',onScroll);
+  },[]);
+
+  // Debounce projection inputs to avoid recalc on every keystroke
+  const ps={birthYear,partnerBirthYear,assets,incomeStreams,baselineSpend,spendInflation,adHocSpending,children,berlinKita,kitaCost,properties,retireAge,retireAgePartner,pensionDrawAge,pensionDrawAgePartner,pensionPeriodsYou,pensionPeriodsPartner};
+  const psJSON=JSON.stringify(ps);
+  const [debouncedPs,setDebouncedPs]=React.useState(ps);
+  React.useEffect(()=>{
+    const timer=setTimeout(()=>setDebouncedPs(JSON.parse(psJSON)),150);
+    return ()=>clearTimeout(timer);
+  },[psJSON]);
+  const data=React.useMemo(()=>buildProjection(debouncedPs),[debouncedPs]);
+  const mc=React.useMemo(()=>runMC(debouncedPs),[debouncedPs]);
+
+
+  const resetAll=()=>{localStorage.removeItem(STORAGE_KEY);window.location.reload();};
+
+  // List helpers
+  const addAsset=()=>setAssets(prev=>[{id:genId(),name:'',value:0,growth:5,type:'etf',ccy:'EUR',allocPct:0},...prev]);
+  const rmAsset=id=>setAssets(prev=>prev.filter(a=>a.id!==id));
+  const upAsset=(id,f,v)=>setAssets(prev=>prev.map(a=>a.id===id?{...a,[f]:v}:a));
+  const upAllocPct=(id,newVal)=>{
+    setAssets(prev=>{const othersTotal=prev.filter(a=>a.id!==id&&a.type!=='property').reduce((s,a)=>s+(a.allocPct||0),0);const maxAllowed=100-othersTotal;const capped=Math.min(newVal,Math.max(0,maxAllowed));return prev.map(a=>a.id===id?{...a,allocPct:capped}:a);});
+  };
+  const addIncome=()=>setIncomeStreams(prev=>[{id:genId(),label:'',monthly:0,frequency:'annual',startYear:CUR_YR,endYear:null,growthPct:3,deTax:true,ccy:'EUR',takesLeave:false},...prev]);
+  const rmIncome=id=>setIncomeStreams(prev=>prev.filter(i=>i.id!==id));
+  const upIncome=(id,f,v)=>setIncomeStreams(prev=>prev.map(i=>i.id===id?{...i,[f]:v}:i));
+  const addAdHoc=()=>setAdHocSpending(prev=>[{id:genId(),label:'',amount:0,startYear:CUR_YR,frequency:'one-off',ccy:'EUR'},...prev]);
+  const rmAdHoc=id=>setAdHocSpending(prev=>prev.filter(i=>i.id!==id));
+  const upAdHoc=(id,f,v)=>setAdHocSpending(prev=>prev.map(i=>i.id===id?{...i,[f]:v}:i));
+  const addChild=()=>{if(children.length<3)setChildren(prev=>[{id:genId(),birthYear:2027,leaveMonths1:12,leaveMonths2:2},...prev]);};
+  const rmChild=id=>setChildren(prev=>prev.filter(c=>c.id!==id));
+  const upChild=(id,f,v)=>setChildren(prev=>prev.map(c=>c.id===id?{...c,[f]:v}:c));
+  const addProp=()=>setProperties(prev=>[{id:genId(),label:'',price:500000,purchaseAge:CUR_YR+4-(birthYear||1994),downPct:20,rate:3.5,term:25,growthPct:2,owned:false,yearsOwned:0,grunderwerbPct:6,notarPct:1.5,maklerPct:3.57},...prev]);
+  const rmProp=id=>setProperties(prev=>prev.filter(p=>p.id!==id));
+  const upProp=(id,f,v)=>setProperties(prev=>prev.map(p=>p.id===id?{...p,[f]:v}:p));
+  const addPeriodYou=()=>setPensionPeriodsYou(prev=>[{id:genId(),label:'',salary:0,startYear:CUR_YR,endYear:null},...prev]);
+  const addPeriodPartner=()=>setPensionPeriodsPartner(prev=>[{id:genId(),label:'',salary:0,startYear:CUR_YR,endYear:null},...prev]);
+  const rmPeriodYou=id=>setPensionPeriodsYou(prev=>prev.filter(p=>p.id!==id));
+  const rmPeriodPartner=id=>setPensionPeriodsPartner(prev=>prev.filter(p=>p.id!==id));
+  const upPeriodYou=(id,f,v)=>setPensionPeriodsYou(prev=>prev.map(p=>p.id===id?{...p,[f]:v}:p));
+  const upPeriodPartner=(id,f,v)=>setPensionPeriodsPartner(prev=>prev.map(p=>p.id===id?{...p,[f]:v}:p));
+
+  const totalPtsYou=calcTotalPoints(pensionPeriodsYou,(birthYear||1994)+retireAge);
+  const totalPtsPartner=calcTotalPoints(pensionPeriodsPartner,(partnerBirthYear||1992)+retireAgePartner);
+  const totalMonthlyIncome=incomeStreams.reduce((s,i)=>{const f=i.frequency||'annual';const mult=f==='monthly'?1:f==='quarterly'?1/3:f==='annual'?1/12:1/12;return s+toEUR(i.monthly,i.ccy||'EUR')*mult;},0);
+  const monthlySurplus=totalMonthlyIncome-(baselineSpend||0);
+  const titleName=name&&partnerName?name+' & '+partnerName:name||partnerName||'';
+  const curAge=CUR_YR-(birthYear||1994);
+  const curData=data.find(d=>d.age===curAge)||data[0]||{};
+
+  // Progress calculation
+  const sectionsDone=[
+    name||partnerName,
+    assets.some(a=>a.value>0),
+    incomeStreams.some(i=>i.monthly>0),
+    baselineSpend>0,
+    true, // children (optional)
+    true, // properties (optional)
+    pensionPeriodsYou.some(p=>p.salary>0)
+  ].filter(Boolean).length;
+
+  // Wizard complete handler
+  const handleWizardComplete=(vals)=>{
+    if(vals.name)setName(vals.name);
+    if(vals.partnerName)setPartnerName(vals.partnerName);
+    if(vals.income1)setIncomeStreams(incomeStreams.map((inc,i)=>i===0?{...inc,monthly:vals.income1,deTax:true}:i===1?{...inc,monthly:vals.income2||0,deTax:true}:inc));
+    if(vals.spend)setBaselineSpend(vals.spend);
+    if(vals.savings){const totalCur=assets.reduce((s,a)=>s+a.value,0);if(totalCur===0||totalCur===80000){const split=vals.savings;setAssets([{id:1,name:'Savings',value:Math.round(split*0.3),growth:2.5,type:'cash'},{id:2,name:'ETF Portfolio',value:Math.round(split*0.7),growth:8,type:'etf'}]);}}
+    if(vals.wantKids==='yes'&&children.length===0)setChildren([{id:genId(),birthYear:CUR_YR+2,leaveMonths1:12,leaveMonths2:2}]);
+    setWizardDone(true);
+  };
+
+  // Charts
+  const chartRef=React.useRef(null);const chartInst=React.useRef(null);
+  const donutRef=React.useRef(null);const donutInst=React.useRef(null);
+  const barRef=React.useRef(null);const barInst=React.useRef(null);
+  const pieRef=React.useRef(null);const pieInst=React.useRef(null);
+  const pie2Ref=React.useRef(null);const pie2Inst=React.useRef(null);
+  const spendBarRef=React.useRef(null);const spendBarInst=React.useRef(null);
+  const tooltipDataRef=React.useRef(null);
+  const barTooltipRef=React.useRef(null);
+
+  // Tooltip helper: creates/returns a tooltip DOM element by id
+  const getTooltipEl=(id)=>{
+    let el=document.getElementById(id);
+    if(!el){el=document.createElement('div');el.id=id;el.style.cssText='position:absolute;pointer-events:none;padding:10px 14px;border-radius:8px;font-size:11px;line-height:1.6;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:opacity 0.15s ease;white-space:nowrap;opacity:0;';document.body.appendChild(el);}
+    return el;
+  };
+
+  // Overview stacked bar chart (every 5 years)
+  React.useEffect(()=>{
+    if(!chartRef.current||activeTab!=='overview')return;
+    if(chartInst.current)chartInst.current.destroy();
+    const slice=data.filter(d=>d.age%5===0||d.age===curAge||d.age===retireAge);
+    const liquidData=slice.map(d=>Math.max(0,d.liquidAssets));
+    const propData=slice.map(d=>Math.max(0,d.nonLiquidAssets));
+    const totals=slice.map(d=>d.totalNetWorth);
+    const isDark=darkMode;
+    const by=birthYear;
+    // External tooltip handler — Chart.js calls this on every hover, no manual listeners needed
+    const externalTooltip=(context)=>{
+      const{chart,tooltip}=context;
+      const el=getTooltipEl('chart-tooltip');
+      if(tooltip.opacity===0){el.style.opacity='0';return;}
+      const idx=tooltip.dataPoints?tooltip.dataPoints[0].dataIndex:0;
+      if(idx>=slice.length)return;
+      el.style.opacity='1';
+      el.style.background=isDark?'#1a1d21':'#fff';el.style.color=isDark?'#ccc':'#333';el.style.border='1px solid '+(isDark?'#3a3f45':'#ddd');
+      const age=slice[idx].age;
+      let html='<div style="font-weight:700;margin-bottom:4px;color:'+(isDark?'#eee':'#1b1b1b')+'">'+t('th_age')+' '+age+' ('+t('th_year')+' '+(by+age)+')</div>';
+      html+='<div style="color:#4db8b3">'+t('l_liquid')+': €'+fmtK(liquidData[idx])+'</div>';
+      (slice[idx].assetBreakdown||[]).forEach(a=>{if(a.value>0)html+='<div style="padding-left:8px;font-size:10px;color:'+(isDark?'#999':'#666')+'">· '+a.name+': €'+fmtK(a.value)+'</div>';});
+      if(propData[idx]>0){html+='<div style="color:#9f78b7;margin-top:2px">'+t('l_non_liquid')+': €'+fmtK(propData[idx])+'</div>';(slice[idx].propBreakdown||[]).forEach(p=>{html+='<div style="padding-left:8px;font-size:10px;color:'+(isDark?'#999':'#666')+'">· 🏠 '+p.name+': €'+fmtK(p.value)+'</div>';});}
+      html+='<div style="margin-top:4px;padding-top:4px;border-top:1px solid '+(isDark?'#3a3f45':'#eee')+';font-weight:700">Total: €'+fmtK(totals[idx])+'</div>';
+      el.innerHTML=html;
+      const pos=chart.canvas.getBoundingClientRect();
+      const left=pos.left+window.scrollX+tooltip.caretX+16;
+      const top=pos.top+window.scrollY+tooltip.caretY-el.offsetHeight/2;
+      el.style.left=Math.min(left,window.innerWidth+window.scrollX-el.offsetWidth-10)+'px';
+      el.style.top=Math.max(top,window.scrollY+4)+'px';
+    };
+    chartInst.current=new Chart(chartRef.current.getContext('2d'),{type:'bar',data:{labels:slice.map(d=>d.age),datasets:[
+      {label:t('l_liquid'),data:liquidData,backgroundColor:isDark?'rgba(77,184,179,0.8)':'rgba(0,84,81,0.8)',borderRadius:2},
+      {label:t('l_non_liquid'),data:propData,backgroundColor:isDark?'rgba(159,120,183,0.7)':'rgba(139,90,163,0.65)',borderRadius:2}
+    ]},options:{responsive:true,maintainAspectRatio:false,animation:{duration:400,easing:'easeOutQuart'},interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:10},color:isDark?'#ccc':'#333'}},tooltip:{enabled:false,external:externalTooltip},datalabels:false},scales:{x:{stacked:true,title:{display:true,text:t('th_age'),font:{size:10},color:isDark?'#999':'#666'},ticks:{font:{size:9},color:isDark?'#999':'#666'},grid:{display:false}},y:{stacked:true,title:{display:false},ticks:{font:{size:9},color:isDark?'#999':'#666',maxTicksLimit:5,callback:v=>'€'+fmtK(v)},grid:{color:isDark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}}}});
+    // Draw labels on bars + total on top
+    const origDraw=chartInst.current.draw.bind(chartInst.current);
+    chartInst.current.draw=function(){
+      origDraw();
+      const ctx2=chartRef.current.getContext('2d');
+      const meta0=chartInst.current.getDatasetMeta(0);
+      const meta1=chartInst.current.getDatasetMeta(1);
+      ctx2.font='bold 9px -apple-system,sans-serif';ctx2.textAlign='center';
+      meta0.data.forEach((bar,i)=>{
+        const barH=Math.abs(bar.base-bar.y);
+        if(barH>20&&liquidData[i]>5000){ctx2.fillStyle='#fff';ctx2.fillText('€'+fmtK(liquidData[i]),bar.x,bar.y+barH/2+3);}
+      });
+      meta1.data.forEach((bar,i)=>{
+        const barH=Math.abs(bar.base-bar.y);
+        if(barH>20&&propData[i]>5000){ctx2.fillStyle='rgba(255,255,255,0.9)';ctx2.fillText('€'+fmtK(propData[i]),bar.x,bar.y+barH/2+3);}
+      });
+      ctx2.fillStyle=isDark?'#ccc':'#333';
+      meta1.data.forEach((bar,i)=>{
+        const topY=Math.min(bar.y,meta0.data[i].y)-6;
+        ctx2.fillText('€'+fmtK(totals[i]),bar.x,topY);
+      });
+    };
+    return()=>{if(chartInst.current)chartInst.current.destroy();};
+  },[data,lang,darkMode,activeTab]);
+
+  // Wealth Composition doughnut — on Overview tab
+  React.useEffect(()=>{
+    if(!pieRef.current||activeTab!=='overview')return;
+    if(pieInst.current)pieInst.current.destroy();
+    const allAssets=[...assets.map(a=>({name:a.name||a.label||t('type_'+a.type)||a.type,value:toEUR(a.value,a.ccy||'EUR')})),...properties.map(p=>{const by2=birthYear||1994;const py=p.owned?CUR_YR-(p.yearsOwned||0):by2+(p.purchaseAge||45);const isOwned=CUR_YR>=py;if(!isOwned)return null;const mktVal=(p.price||0)*Math.pow(1+(p.growthPct||2)/100,CUR_YR-py);const loan=(p.price||0)*(1-(p.downPct||20)/100);const r=(p.rate||3.5)/100/12;const n=(p.term||25)*12;const pmts=Math.min((CUR_YR-py)*12,n);let rem=loan;if(pmts<n&&r>0)rem=loan*Math.pow(1+r,pmts)-(loan*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1))*((Math.pow(1+r,pmts)-1)/r);else if(pmts>=n)rem=0;return{name:p.label||'Property',value:Math.round(mktVal-Math.max(0,rem))};})].filter(Boolean).filter(a=>a.value>0).sort((a,b)=>b.value-a.value);
+    if(allAssets.length===0)return;
+    const colors=['#005451','#D4A843','#B55B64','#8b5aa3','#6ee7b7','#4a9eff','#ff9f43','#aaa'];
+    const dk=darkMode;
+    pieInst.current=new Chart(pieRef.current.getContext('2d'),{type:'doughnut',data:{labels:allAssets.map(a=>a.name),datasets:[{data:allAssets.map(a=>a.value),backgroundColor:allAssets.map((_,i)=>colors[i%colors.length]),borderWidth:2,borderColor:dk?'#1e2125':'#fff'}]},options:{responsive:true,maintainAspectRatio:true,cutout:'55%',plugins:{legend:{display:false},tooltip:{backgroundColor:dk?'rgba(30,33,37,0.96)':'rgba(255,255,255,0.96)',titleColor:dk?'#eee':'#1b1b1b',bodyColor:dk?'#ccc':'#333',borderColor:dk?'#3a3f45':'#eee',borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>ctx.label+': €'+fmtK(ctx.raw)+' ('+Math.round(ctx.raw/allAssets.reduce((s,a)=>s+a.value,0)*100)+'%)'}}}}});
+    return()=>{if(pieInst.current)pieInst.current.destroy();};
+  },[assets,properties,lang,darkMode,activeTab,birthYear]);
+
+  // Wealth Composition in 15 years — doughnut on Overview tab
+  React.useEffect(()=>{
+    if(!pie2Ref.current||activeTab!=='overview')return;
+    if(pie2Inst.current)pie2Inst.current.destroy();
+    const futureAge=curAge+15;
+    const futureData=data.find(d=>d.age===futureAge);
+    if(!futureData)return;
+    const items=[];
+    (futureData.assetBreakdown||[]).forEach(a=>{if(a.value>0)items.push({name:a.name,value:a.value});});
+    (futureData.propBreakdown||[]).forEach(p=>{if(p.value>0)items.push({name:p.name,value:p.value});});
+    if(items.length===0)return;
+    items.sort((a,b)=>b.value-a.value);
+    const colors=['#005451','#D4A843','#B55B64','#8b5aa3','#6ee7b7','#4a9eff','#ff9f43','#aaa'];
+    const dk=darkMode;
+    pie2Inst.current=new Chart(pie2Ref.current.getContext('2d'),{type:'doughnut',data:{labels:items.map(a=>a.name),datasets:[{data:items.map(a=>a.value),backgroundColor:items.map((_,i)=>colors[i%colors.length]),borderWidth:2,borderColor:dk?'#1e2125':'#fff'}]},options:{responsive:true,maintainAspectRatio:true,cutout:'55%',plugins:{legend:{display:false},tooltip:{backgroundColor:dk?'rgba(30,33,37,0.96)':'rgba(255,255,255,0.96)',titleColor:dk?'#eee':'#1b1b1b',bodyColor:dk?'#ccc':'#333',borderColor:dk?'#3a3f45':'#eee',borderWidth:1,padding:10,cornerRadius:8,callbacks:{label:ctx=>ctx.label+': €'+fmtK(ctx.raw)+' ('+Math.round(ctx.raw/items.reduce((s,a)=>s+a.value,0)*100)+'%)'}}}}});
+    return()=>{if(pie2Inst.current)pie2Inst.current.destroy();};
+  },[data,lang,darkMode,activeTab]);
+
+  // Spending breakdown stacked bar chart — on Overview tab
+  React.useEffect(()=>{
+    if(!spendBarRef.current||activeTab!=='overview')return;
+    if(spendBarInst.current)spendBarInst.current.destroy();
+    const spSlice=data.filter(d=>d.age>=curAge&&(d.age%3===0||d.event||d.age===curAge||d.age===retireAge)&&d.totalSpend>0);
+    if(spSlice.length<2)return;
+    const categorise=bd=>{let base=0,child=0,housing=0,other=0;(bd||[]).forEach(b=>{if(b.name==='Baseline'||b.name==='Health insurance')base+=b.value;else if(b.name.startsWith('Child'))child+=b.value;else if(b.name.startsWith('Mortgage')||b.name.startsWith('🏠'))housing+=b.value;else other+=b.value;});return{base,child,housing,other};};
+    const cats=spSlice.map(d=>categorise(d.spendBreakdown));
+    const dk=darkMode;
+    const externalTooltip2=(context)=>{
+      const{chart,tooltip}=context;
+      const el=getTooltipEl('spend-tooltip');
+      if(tooltip.opacity===0){el.style.opacity='0';return;}
+      const idx=tooltip.dataPoints?tooltip.dataPoints[0].dataIndex:0;
+      if(idx>=spSlice.length)return;
+      el.style.opacity='1';
+      el.style.background=dk?'#1a1d21':'#fff';el.style.color=dk?'#ccc':'#333';el.style.border='1px solid '+(dk?'#3a3f45':'#ddd');
+      const d=spSlice[idx];const c=cats[idx];
+      let html='<div style="font-weight:700;margin-bottom:4px;color:'+(dk?'#eee':'#1b1b1b')+'">'+t('th_age')+' '+d.age+' ('+t('th_year')+' '+(birthYear+d.age)+')</div>';
+      html+='<div style="color:#005451">'+t('ov_sp_baseline')+': €'+fmtK(c.base)+'</div>';
+      if(c.child>0)html+='<div style="color:#4db8b3">'+t('ov_sp_children')+': €'+fmtK(c.child)+'</div>';
+      if(c.housing>0)html+='<div style="color:#D4A843">'+t('ov_sp_housing')+': €'+fmtK(c.housing)+'</div>';
+      if(c.other>0)html+='<div style="color:#B55B64">'+t('ov_sp_other')+': €'+fmtK(c.other)+'</div>';
+      html+='<div style="margin-top:4px;padding-top:4px;border-top:1px solid '+(dk?'#3a3f45':'#eee')+';font-weight:700">Total: €'+fmtK(d.totalSpend)+'</div>';
+      el.innerHTML=html;
+      const pos=chart.canvas.getBoundingClientRect();
+      el.style.left=Math.min(pos.left+window.scrollX+tooltip.caretX+16,window.innerWidth+window.scrollX-el.offsetWidth-10)+'px';
+      el.style.top=Math.max(pos.top+window.scrollY+tooltip.caretY-el.offsetHeight/2,window.scrollY+4)+'px';
+    };
+    const totals2=cats.map(c=>c.base+c.child+c.housing+c.other);
+    spendBarInst.current=new Chart(spendBarRef.current.getContext('2d'),{type:'bar',data:{labels:spSlice.map(d=>d.age),datasets:[
+      {label:t('ov_sp_baseline'),data:cats.map(c=>c.base),backgroundColor:dk?'rgba(77,184,179,0.8)':'rgba(0,84,81,0.85)',borderRadius:1},
+      {label:t('ov_sp_children'),data:cats.map(c=>c.child),backgroundColor:'rgba(77,184,179,0.5)',borderRadius:1},
+      {label:t('ov_sp_housing'),data:cats.map(c=>c.housing),backgroundColor:dk?'rgba(212,168,67,0.8)':'rgba(212,168,67,0.75)',borderRadius:1},
+      {label:t('ov_sp_other'),data:cats.map(c=>c.other),backgroundColor:dk?'rgba(181,91,100,0.8)':'rgba(181,91,100,0.75)',borderRadius:1}
+    ]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:10,font:{size:10},color:dk?'#ccc':'#333'}},tooltip:{enabled:false,external:externalTooltip2}},scales:{x:{stacked:true,title:{display:true,text:t('th_age'),font:{size:10},color:dk?'#999':'#666'},ticks:{font:{size:9},color:dk?'#999':'#666'},grid:{display:false}},y:{stacked:true,ticks:{font:{size:9},color:dk?'#999':'#666',callback:v=>'€'+fmtK(v)},grid:{color:dk?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}}}});
+    // Draw segment labels inside bars + total on top
+    const origDraw2=spendBarInst.current.draw.bind(spendBarInst.current);
+    spendBarInst.current.draw=function(){
+      origDraw2();
+      const ctx2=spendBarRef.current.getContext('2d');
+      ctx2.font='bold 9px -apple-system,sans-serif';ctx2.textAlign='center';
+      // Labels inside each segment if tall enough
+      const numDS=spendBarInst.current.data.datasets.length;
+      for(let ds=0;ds<numDS;ds++){
+        const meta=spendBarInst.current.getDatasetMeta(ds);
+        meta.data.forEach((bar,i)=>{
+          const barH=Math.abs(bar.base-bar.y);
+          const val=spendBarInst.current.data.datasets[ds].data[i];
+          if(barH>18&&val>3000){ctx2.fillStyle='rgba(255,255,255,0.9)';ctx2.fillText('€'+fmtK(val),bar.x,bar.y+barH/2+3);}
+        });
+      }
+      // Total above top bar
+      const topMeta=spendBarInst.current.getDatasetMeta(numDS-1);
+      ctx2.fillStyle=dk?'#ccc':'#333';
+      topMeta.data.forEach((bar,i)=>{
+        const topY=bar.y-6;
+        ctx2.fillText('€'+fmtK(totals2[i]),bar.x,topY);
+      });
+    };
+    return()=>{if(spendBarInst.current)spendBarInst.current.destroy();};
+  },[data,lang,darkMode,activeTab]);
+
+  // Projection line chart — on Projection tab
+  React.useEffect(()=>{
+    if(!donutRef.current||activeTab!=='projection')return;
+    if(donutInst.current)donutInst.current.destroy();
+    const datasets=[
+      {label:t('l_liquid'),data:data.map(d=>d.liquidAssets),borderColor:'#005451',backgroundColor:'rgba(0,84,81,0.08)',fill:true,tension:0.3,pointRadius:0,borderWidth:2},
+      {label:t('l_non_liquid'),data:data.map(d=>d.nonLiquidAssets),borderColor:'rgba(139,90,163,1)',backgroundColor:'rgba(139,90,163,0.08)',fill:true,tension:0.3,pointRadius:0,borderWidth:1.5}
+    ];
+    const dk=darkMode;
+    donutInst.current=new Chart(donutRef.current.getContext('2d'),{type:'line',data:{labels:data.map(d=>d.age),datasets},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'top',labels:{boxWidth:12,font:{size:10},color:dk?'#ccc':'#333'}},tooltip:{backgroundColor:dk?'rgba(30,33,37,0.96)':'rgba(255,255,255,0.96)',titleColor:dk?'#eee':'#1b1b1b',bodyColor:dk?'#ccc':'#333',borderColor:dk?'#3a3f45':'#eee',borderWidth:1,padding:12,cornerRadius:8,titleFont:{weight:'bold',size:11},bodyFont:{size:10},callbacks:{title:ctx=>t('th_age')+' '+ctx[0].label+' ('+t('th_year')+' '+(birthYear+parseInt(ctx[0].label))+')',label:ctx=>ctx.dataset.label+': €'+fmtK(ctx.raw)}}},scales:{x:{title:{display:true,text:t('th_age'),font:{size:10},color:dk?'#999':'#666'},ticks:{font:{size:9},color:dk?'#999':'#666',maxTicksLimit:15},grid:{display:false}},y:{title:{display:true,text:'EUR',font:{size:10},color:dk?'#999':'#666'},ticks:{font:{size:9},color:dk?'#999':'#666',callback:v=>'€'+fmtK(v)},grid:{color:dk?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.04)'}}}}});
+    return()=>{if(donutInst.current)donutInst.current.destroy();};
+  },[data,lang,darkMode,activeTab]);
+
+  // Bar chart (cash flow) — premium version with net line, milestones, hover fade, crosshair, zero-line
+  React.useEffect(()=>{
+    if(!barRef.current||activeTab!=='cashflow')return;
+    if(barInst.current)barInst.current.destroy();
+    // Show from current age to 90, sampling every 3 years + milestone years + retirement
+    const endAge=90;
+    const slice=data.filter(d=>{
+      if(d.age<curAge||d.age>endAge)return false;
+      if(d.age===curAge||d.age===retireAge)return true;
+      if(d.event)return true;// always show milestone years
+      return(d.age-curAge)%3===0;
+    });
+    const dk2=darkMode;
+    const netData=slice.map(d=>d.totalIncome-d.totalSpend);
+    // Cumulative surplus for sparkline in tooltip
+    let cum=0;const cumData=slice.map(d=>{cum+=d.totalIncome-d.totalSpend;return cum;});
+    // Colors: deep navy-teal for income, warm terracotta for expenses
+    const incColor=dk2?'rgba(77,184,179,0.82)':'rgba(0,74,78,0.82)';
+    const expColor=dk2?'rgba(194,118,110,0.75)':'rgba(168,87,79,0.75)';
+    const incColorFade=dk2?'rgba(77,184,179,0.25)':'rgba(0,74,78,0.25)';
+    const expColorFade=dk2?'rgba(194,118,110,0.22)':'rgba(168,87,79,0.22)';
+
+    // Zero-line plugin — draws a prominent line at y=0
+    const zeroLinePlugin={id:'zeroLine',afterDraw:(chart)=>{
+      const yScale=chart.scales.y;const xScale=chart.scales.x;
+      if(!yScale||!xScale)return;
+      const yZero=yScale.getPixelForValue(0);
+      if(yZero<yScale.top||yZero>yScale.bottom)return;
+      const ctx=chart.ctx;
+      ctx.save();ctx.beginPath();
+      ctx.strokeStyle=dk2?'rgba(255,255,255,0.25)':'rgba(0,0,0,0.18)';
+      ctx.lineWidth=1.5;ctx.setLineDash([6,3]);
+      ctx.moveTo(xScale.left,yZero);ctx.lineTo(xScale.right,yZero);ctx.stroke();
+      // Label
+      ctx.font='bold 8px -apple-system,sans-serif';ctx.fillStyle=dk2?'rgba(255,255,255,0.4)':'rgba(0,0,0,0.3)';
+      ctx.textAlign='right';ctx.fillText('€0',xScale.left-4,yZero+3);
+      ctx.restore();
+    }};
+
+    // Crosshair plugin — thin vertical line at hovered position
+    const crosshairPlugin={id:'crosshair',afterDraw:(chart)=>{
+      const active=chart.getActiveElements();
+      if(active.length===0)return;
+      const xScale=chart.scales.x;const yScale=chart.scales.y;
+      const x=xScale.getPixelForTick(active[0].index);
+      const ctx=chart.ctx;
+      ctx.save();ctx.beginPath();
+      ctx.strokeStyle=dk2?'rgba(212,168,67,0.4)':'rgba(184,134,11,0.3)';
+      ctx.lineWidth=1;ctx.setLineDash([2,2]);
+      ctx.moveTo(x,yScale.top);ctx.lineTo(x,yScale.bottom);ctx.stroke();ctx.restore();
+    }};
+
+    // Milestone plugin — draws vertical dashed lines + badges for life events
+    const milestonePlugin={id:'milestones',afterDraw:(chart)=>{
+      const ctx=chart.ctx;const xScale=chart.scales.x;const yScale=chart.scales.y;
+      // First pass: measure all badges and detect overlaps to stagger rows
+      const badges=[];
+      slice.forEach((d,i)=>{
+        if(!d.event)return;
+        const x=xScale.getPixelForTick(i);
+        const label=d.event.slice(0,2)+' '+d.event.slice(2).trim().split(' ').slice(0,2).join(' ');
+        ctx.save();ctx.font='bold 8px -apple-system,sans-serif';
+        const tw=ctx.measureText(label).width+10;ctx.restore();
+        badges.push({x,label,tw,idx:i});
+      });
+      // Assign rows: if a badge overlaps the previous one on the same row, bump it up
+      const pillH=16;const gap=2;
+      badges.forEach((b,bi)=>{
+        b.row=0;
+        for(let prev=bi-1;prev>=0;prev--){
+          const p=badges[prev];
+          if(p.row!==b.row)continue;
+          const pRight=p.x+p.tw/2;const bLeft=b.x-b.tw/2;
+          if(bLeft<pRight+4){b.row=p.row+1;prev=bi;}// restart check against new row
+        }
+      });
+      // Draw
+      badges.forEach(b=>{
+        const x=b.x;
+        // Subtle glow
+        ctx.save();ctx.fillStyle=dk2?'rgba(212,168,67,0.04)':'rgba(212,168,67,0.03)';
+        const barW=(xScale.right-xScale.left)/slice.length;
+        ctx.fillRect(x-barW/2,yScale.top,barW,yScale.bottom-yScale.top);ctx.restore();
+        // Dashed vertical line
+        ctx.save();ctx.beginPath();ctx.setLineDash([3,3]);ctx.strokeStyle=dk2?'rgba(212,168,67,0.5)':'rgba(184,134,11,0.35)';ctx.lineWidth=1;
+        ctx.moveTo(x,yScale.top);ctx.lineTo(x,yScale.bottom);ctx.stroke();ctx.restore();
+        // Badge pill — staggered by row
+        const by2=yScale.top-18-(b.row*(pillH+gap));
+        const bx=x-b.tw/2;
+        ctx.save();ctx.font='bold 8px -apple-system,sans-serif';ctx.textAlign='center';
+        ctx.fillStyle=dk2?'rgba(212,168,67,0.15)':'rgba(212,168,67,0.12)';
+        ctx.strokeStyle=dk2?'rgba(212,168,67,0.4)':'rgba(184,134,11,0.3)';ctx.lineWidth=0.7;
+        ctx.beginPath();const rr=7;ctx.moveTo(bx+rr,by2);ctx.lineTo(bx+b.tw-rr,by2);ctx.quadraticCurveTo(bx+b.tw,by2,bx+b.tw,by2+rr);ctx.lineTo(bx+b.tw,by2+14-rr);ctx.quadraticCurveTo(bx+b.tw,by2+14,bx+b.tw-rr,by2+14);ctx.lineTo(bx+rr,by2+14);ctx.quadraticCurveTo(bx,by2+14,bx,by2+14-rr);ctx.lineTo(bx,by2+rr);ctx.quadraticCurveTo(bx,by2,bx+rr,by2);ctx.closePath();ctx.fill();ctx.stroke();
+        ctx.fillStyle=dk2?'#D4A843':'#7a5c00';ctx.fillText(b.label,x,by2+10);ctx.restore();
+      });
+    }};
+
+    // YoY change labels plugin — shows delta arrows between adjacent bars
+    const yoyPlugin={id:'yoyLabels',afterDraw:(chart)=>{
+      const ctx=chart.ctx;const xScale=chart.scales.x;const yScale=chart.scales.y;
+      const meta0=chart.getDatasetMeta(0);// income bars
+      if(!meta0||!meta0.data||meta0.data.length<2)return;
+      ctx.save();ctx.font='bold 7px -apple-system,sans-serif';ctx.textAlign='center';
+      // Only show labels for significant structural changes (>€10k delta) to avoid clutter on sparse intervals
+      for(let i=1;i<slice.length;i++){
+        const prevNet=netData[i-1];const curNet=netData[i];
+        const delta=curNet-prevNet;
+        if(Math.abs(delta)<10000)continue;// threshold for sparse chart
+        const x=xScale.getPixelForTick(i);
+        const incBar=meta0.data[i];
+        const yPos=incBar.y-8;
+        const arrow=delta>0?'↑':'↓';
+        const color=delta>0?(dk2?'rgba(77,184,179,0.7)':'rgba(0,84,81,0.6)'):(dk2?'rgba(224,112,128,0.7)':'rgba(194,48,48,0.6)');
+        ctx.fillStyle=color;
+        ctx.fillText(arrow+fmtK(Math.abs(delta)),x,yPos);
+      }
+      ctx.restore();
+    }};
+
+    // Hover fade plugin — dims non-hovered bars
+    const hoverFadePlugin={id:'hoverFade',beforeDraw:(chart)=>{
+      const active=chart.getActiveElements();
+      if(active.length===0){
+        chart.data.datasets.forEach((ds,dsi)=>{
+          const origColors=ds._origBg;
+          if(origColors)ds.backgroundColor=origColors;
+        });
+        return;
+      }
+      const hIdx=active[0].index;
+      chart.data.datasets.forEach((ds,dsi)=>{
+        if(dsi>=2)return;// skip net line
+        if(!ds._origBg)ds._origBg=ds.backgroundColor;
+        const orig=ds._origBg;
+        const fadeColor=dsi===0?incColorFade:expColorFade;
+        if(Array.isArray(orig)){
+          ds.backgroundColor=orig.map((_,i)=>i===hIdx?orig[i]:fadeColor);
+        } else {
+          ds.backgroundColor=slice.map((_,i)=>i===hIdx?orig:fadeColor);
+        }
+      });
+    }};
+
+    // External tooltip handler — with cumulative sparkline
+    const externalBarTooltip=(context)=>{
+      const{chart,tooltip}=context;
+      const el=getTooltipEl('bar-tooltip');
+      if(tooltip.opacity===0){el.style.opacity='0';return;}
+      const idx=tooltip.dataPoints?tooltip.dataPoints[0].dataIndex:0;
+      if(idx>=slice.length)return;
+      el.style.opacity='1';
+      el.style.background=dk2?'rgba(26,29,33,0.97)':'rgba(255,255,255,0.97)';el.style.color=dk2?'#ccc':'#333';el.style.border='1px solid '+(dk2?'#3a3f45':'#ddd');el.style.maxWidth='300px';el.style.whiteSpace='normal';
+      const dp=slice[idx];
+      const net=dp.totalIncome-dp.totalSpend;
+      const prevNet=idx>0?(slice[idx-1].totalIncome-slice[idx-1].totalSpend):net;
+      const yoyDelta=net-prevNet;
+      let html='<div style="font-weight:700;margin-bottom:6px;font-size:12px;color:'+(dk2?'#eee':'#1b1b1b')+'">'+t('th_age')+' '+dp.age+' <span style="font-weight:400;color:'+(dk2?'#888':'#999')+'">('+dp.year+')</span>';
+      if(idx>0&&Math.abs(yoyDelta)>500)html+=' <span style="font-size:9px;color:'+(yoyDelta>0?(dk2?'#4db8b3':'#005451'):(dk2?'#e07080':'#c23030'))+'">'+(yoyDelta>0?'↑':'↓')+'€'+fmtK(Math.abs(yoyDelta))+' YoY</span>';
+      html+='</div>';
+      // Income section
+      html+='<div style="margin-bottom:4px"><div style="color:'+(dk2?'#4db8b3':'#004a4e')+';font-weight:700;font-size:11px;margin-bottom:2px">▲ '+t('th_earn')+': €'+fmtK(dp.totalIncome)+'</div>';
+      (dp.incomeBreakdown||[]).forEach(item=>{html+='<div style="padding-left:10px;font-size:10px;color:'+(dk2?'#aaa':'#555')+'">· '+item.name+': <strong>€'+fmtK(item.value)+'</strong></div>';});
+      html+='</div>';
+      // Expense section
+      html+='<div style="margin-bottom:4px"><div style="color:'+(dk2?'#c2766e':'#a8574f')+';font-weight:700;font-size:11px;margin-bottom:2px">▼ '+t('th_spend')+': €'+fmtK(dp.totalSpend)+'</div>';
+      (dp.spendBreakdown||[]).forEach(item=>{html+='<div style="padding-left:10px;font-size:10px;color:'+(dk2?'#aaa':'#555')+'">· '+item.name+': <strong>€'+fmtK(item.value)+'</strong></div>';});
+      html+='</div>';
+      // Net balance
+      html+='<div style="margin-top:6px;padding-top:6px;border-top:1.5px solid '+(dk2?'#3a3f45':'#eee')+';display:flex;justify-content:space-between;align-items:center">';
+      html+='<span style="font-weight:700;font-size:11px">'+t('surplus_label')+'</span>';
+      html+='<span style="font-weight:800;font-size:13px;color:'+(net>=0?(dk2?'#D4A843':'#b8860b'):(dk2?'#e07080':'#c23030'))+'">'+(net>=0?'+':'−')+'€'+fmtK(Math.abs(net))+'</span>';
+      html+='</div>';
+      // Cumulative sparkline
+      html+='<div style="margin-top:6px;padding-top:5px;border-top:1px dashed '+(dk2?'#3a3f45':'#eee')+'">';
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px"><span style="font-size:9px;color:'+(dk2?'#888':'#999')+'">Cumulative to age '+dp.age+'</span><span style="font-size:10px;font-weight:700;color:'+(cumData[idx]>=0?(dk2?'#D4A843':'#b8860b'):(dk2?'#e07080':'#c23030'))+'">€'+fmtK(cumData[idx])+'</span></div>';
+      // SVG sparkline
+      const spW=180;const spH=24;const maxC=Math.max(...cumData.map(Math.abs),1);
+      let svgPath='';cumData.slice(0,idx+1).forEach((v,ci)=>{const sx=ci/(slice.length-1)*spW;const sy=spH/2-v/maxC*(spH/2-2);svgPath+=(ci===0?'M':'L')+sx.toFixed(1)+','+sy.toFixed(1);});
+      const lineCol=cumData[idx]>=0?(dk2?'#D4A843':'#b8860b'):(dk2?'#e07080':'#c23030');
+      html+='<svg width="'+spW+'" height="'+spH+'" style="display:block"><line x1="0" y1="'+(spH/2)+'" x2="'+spW+'" y2="'+(spH/2)+'" stroke="'+(dk2?'#3a3f45':'#e0e0e0')+'" stroke-width="0.5"/><path d="'+svgPath+'" fill="none" stroke="'+lineCol+'" stroke-width="1.5" stroke-linecap="round"/><circle cx="'+(idx/(slice.length-1)*spW).toFixed(1)+'" cy="'+(spH/2-cumData[idx]/maxC*(spH/2-2)).toFixed(1)+'" r="2.5" fill="'+lineCol+'"/></svg>';
+      html+='</div>';
+      // Event badge if present
+      if(dp.event){html+='<div style="margin-top:5px;padding:3px 8px;background:'+(dk2?'rgba(212,168,67,0.15)':'rgba(212,168,67,0.1)')+';border-radius:4px;font-size:9px;font-weight:600;color:'+(dk2?'#D4A843':'#8b6914')+'">'+dp.event+'</div>';}
+      el.innerHTML=html;
+      const pos=chart.canvas.getBoundingClientRect();
+      const left=pos.left+window.scrollX+tooltip.caretX+16;
+      const top=pos.top+window.scrollY+tooltip.caretY-el.offsetHeight/2;
+      el.style.left=Math.min(left,window.innerWidth+window.scrollX-el.offsetWidth-10)+'px';
+      el.style.top=Math.max(top,window.scrollY+4)+'px';
+    };
+    barInst.current=new Chart(barRef.current.getContext('2d'),{type:'bar',data:{labels:slice.map(d=>d.age),datasets:[
+      {label:t('th_earn'),data:slice.map(d=>d.totalIncome),backgroundColor:incColor,borderRadius:5,borderSkipped:false},
+      {label:t('th_spend'),data:slice.map(d=>-d.totalSpend),backgroundColor:expColor,borderRadius:5,borderSkipped:false},
+      {label:t('surplus_label'),data:netData,type:'line',borderColor:dk2?'#D4A843':'#b8860b',backgroundColor:(()=>{const ctx2=barRef.current.getContext('2d');const g=ctx2.createLinearGradient(0,0,0,320);g.addColorStop(0,dk2?'rgba(212,168,67,0.25)':'rgba(184,134,11,0.18)');g.addColorStop(0.5,'rgba(212,168,67,0.05)');g.addColorStop(1,'rgba(224,112,128,0.12)');return g;})(),fill:true,borderWidth:2.5,pointRadius:4,pointHoverRadius:7,pointBackgroundColor:netData.map(v=>v>=0?(dk2?'#D4A843':'#b8860b'):(dk2?'#e07080':'#c23030')),pointBorderColor:netData.map(v=>v>=0?(dk2?'rgba(212,168,67,0.3)':'rgba(184,134,11,0.3)'):(dk2?'rgba(224,112,128,0.3)':'rgba(194,48,48,0.3)')),pointBorderWidth:2,tension:0.35,yAxisID:'y',order:0}
+    ]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:52,bottom:4}},animation:{duration:700,easing:'easeOutQuart',delay:(ctx)=>{if(ctx.type==='data'&&ctx.mode==='default')return ctx.dataIndex*30;return 0;}},interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',align:'center',labels:{boxWidth:10,font:{size:10,weight:'500'},color:dk2?'#ccc':'#444',padding:16,usePointStyle:true,pointStyle:'rectRounded'}},tooltip:{enabled:false,external:externalBarTooltip}},scales:{x:{title:{display:true,text:t('th_age'),font:{size:10,weight:'600'},color:dk2?'#aaa':'#555'},ticks:{font:{size:8,weight:'500'},color:dk2?'#999':'#666',maxRotation:0},grid:{display:false}},y:{ticks:{font:{size:9},color:dk2?'#999':'#666',callback:v=>(v>=0?'':'−')+'€'+fmtK(Math.abs(v))},grid:{color:dk2?'rgba(255,255,255,0.05)':'rgba(0,0,0,0.04)'}}}},plugins:[zeroLinePlugin,crosshairPlugin,milestonePlugin,yoyPlugin,hoverFadePlugin]});
+    return()=>{if(barInst.current)barInst.current.destroy();};
+  },[data,activeTab,lang,darkMode]);
+
+  // ============ RENDER ============
+  return(
+    <div>
+      {/* Wizard */}
+      {!wizardDone && <Wizard onComplete={handleWizardComplete} t={t}/>}
+
+      {/* Sticky Summary Bar — hides on scroll down */}
+      <div style={{position:'sticky',top:0,zIndex:50}}>
+        <div className={'summary-bar'+(barHidden?' bar-mini':'')}>
+          <div className="summary-item">
+            <div className="sl">{t('sb_nw')}</div>
+            <div className="sv" style={{color:'#6ee7b7'}}>€{fmtK(curData.totalNetWorth||0)}</div>
+            {showLegend && <div className="si-sub" style={{animationDelay:'0s'}}>{t('sb_tip_nw')}</div>}
+          </div>
+          <div className="summary-item">
+            <div className="sl">{t('sb_surplus')}</div>
+            <div className="sv" style={{color:monthlySurplus>=0?'#6ee7b7':'#fca5a5'}}>{monthlySurplus>=0?'+':'-'}€{fmt(Math.abs(monthlySurplus))}</div>
+            {showLegend && <div className="si-sub" style={{animationDelay:'0.08s'}}>{t('sb_tip_surplus')}</div>}
+          </div>
+          <div className="summary-item">
+            <div className="sl">{t('sb_mc')}</div>
+            <div className="sv" style={{color:mc.successRate>=70?'#6ee7b7':mc.successRate>=50?'#fde68a':'#fca5a5'}}>{mc.successRate}%</div>
+            {showLegend && <div className="si-sub" style={{animationDelay:'0.16s'}}>{t('sb_tip_mc')}</div>}
+          </div>
+          <div className="summary-item">
+            <div className="sl">{t('sb_retire')}</div>
+            <div className="sv">{(()=>{const neg=data.find(d=>d.age>retireAge&&d.liquidAssets<0);const lastsTo=neg?neg.age:END_AGE;return <span style={{color:lastsTo>=90?'#6ee7b7':lastsTo>=80?'#fde68a':'#fca5a5'}}>{retireAge} → {lastsTo>=END_AGE?END_AGE+'+':lastsTo}</span>;})()}</div>
+            {showLegend && <div className="si-sub" style={{animationDelay:'0.24s'}}>{t('sb_tip_retire')}</div>}
+          </div>
+          <div className="summary-item">
+            <div className="sl">{t('sb_event')}</div>
+            <div className="sv" style={{fontSize:'14px'}}>{(data.find(d=>d.event&&d.age>curAge)||{}).event||'—'}</div>
+            {showLegend && <div className="si-sub" style={{animationDelay:'0.32s'}}>{t('sb_tip_event')}</div>}
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'4px',paddingLeft:6,flexShrink:0}}>
+            <div className="summary-help" onClick={()=>setShowLegend(!showLegend)}>?</div>
+            {['en','de','vi'].map(l=><span key={l} onClick={()=>setLang(l)} style={{fontSize:'9px',fontWeight:lang===l?700:400,opacity:lang===l?1:0.5,cursor:'pointer',color:'#fff',letterSpacing:'0.3px'}}>{l.toUpperCase()}</span>)}
+            <span className={'toggle sm'+(darkMode?' on':'')} onClick={()=>setDarkMode(!darkMode)}></span>
+          </div>
+        </div>
+      </div>
+
+      <div className="header">
+        <h1>{titleName?titleName+"'s":''} {t('header_title')}</h1>
+        <div className="subtitle">{t('header_sub')} · <span style={{opacity:0.7}}>{t('header_disclaimer')}</span></div>
+      </div>
+
+      {/* Mobile drawer toggle */}
+      <div className="mobile-toggle" onClick={()=>setMobileOpen(!mobileOpen)}>
+        <span>{t('mobile_inputs')}</span>
+        <span style={{marginLeft:'auto',fontSize:'10px',color:'var(--grey)'}}>{t('progress_complete').replace('{0}',sectionsDone)}</span>
+        <span>{mobileOpen?'▲':'▼'}</span>
+      </div>
+
+      {/* Panel toggle button */}
+      <div className={'panel-toggle'+(panelOpen?' open':' closed')} onClick={()=>setPanelOpen(!panelOpen)} title={panelOpen?'Hide inputs':'Show inputs'}>
+        {panelOpen?'◀':'▶'}
+      </div>
+
+      <div className={'app-layout'+(panelOpen?'':' collapsed')}>
+        {/* ===== LEFT PANEL ===== */}
+        <div className={'left-panel'+(mobileOpen?' mobile-open':'')+(panelOpen?'':' panel-hidden')}>
+
+
+          {/* Personal */}
+          <Card title={t('personal')} emoji="👫" tip={t('tip_personal')} defaultOpen={true}>
+            <div className="input-row">
+              <div><label>👤 {t('your_name')}</label><input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Linh"/></div>
+              <div><label>👤 {t('partner_name')}</label><input type="text" value={partnerName} onChange={e=>setPartnerName(e.target.value)} placeholder="e.g. Max"/></div>
+            </div>
+            <div className="input-row">
+              <div><label>🎂 {t('your_birth_year')}</label><input type="number" value={birthYear} onChange={e=>setBirthYear(+e.target.value)}/></div>
+              <div><label>🎂 {t('partner_birth_year')}</label><input type="number" value={partnerBirthYear} onChange={e=>setPartnerBirthYear(+e.target.value)}/></div>
+            </div>
+          </Card>
+
+          {/* Assets */}
+          <Card title={t('assets')} emoji="🏦" onAdd={addAsset} addLabel={t('add')} tip={t('tip_assets')} defaultOpen={true}>
+            <div style={{fontSize:'9px',color:'var(--grey)',marginBottom:8,padding:'3px 6px',background:'var(--light)',borderRadius:4}}>💱 FX: 1 USD = 0.92 · 1 SGD = 0.69 · 1 VND = 0.000037 EUR</div>
+            {assets.map(a=>(
+              <div key={a.id} className="dynamic-item">
+                <button className="remove-btn" onClick={()=>rmAsset(a.id)}>✕</button>
+                <div className="input-row">
+                  <div><label>{t('asset_name')}</label><input type="text" value={a.name} onChange={e=>upAsset(a.id,'name',e.target.value)}/></div>
+                  <div><label>{t('asset_type')}</label><select value={a.type} onChange={e=>upAsset(a.id,'type',e.target.value)}>{['cash','etf','stocks','bonds','dividends','crypto','property','other'].map(tp=><option key={tp} value={tp}>{t('type_'+tp)}</option>)}</select></div>
+                </div>
+                <div className="input-row-3">
+                  <div><label>{t('asset_value')}</label><NumInput value={a.value} onChange={v=>upAsset(a.id,'value',v)}/></div>
+                  <div><label>{t('currency')}</label><select value={a.ccy||'EUR'} onChange={e=>upAsset(a.id,'ccy',e.target.value)}>{CURRENCIES.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+                  <div><label>{t('asset_growth')}</label><div className="slider-row"><input type="range" min={0} max={15} step={0.5} value={a.growth||0} onChange={e=>upAsset(a.id,'growth',+e.target.value)}/><span className="slider-val">{a.growth||0}%</span></div></div>
+                </div>
+              </div>
+            ))}
+          </Card>
+
+          {/* Income */}
+          <Card title={t('income')} emoji="💼" onAdd={addIncome} addLabel={t('add')} tip={t('tip_income')}>
+            {incomeStreams.map((inc,idx)=>(
+              <div key={inc.id} className="dynamic-item">
+                <button className="remove-btn" onClick={()=>rmIncome(inc.id)}>✕</button>
+                <div className="input-row-3">
+                  <div><label>{t('income_label')}</label><input type="text" value={inc.label} onChange={e=>upIncome(inc.id,'label',e.target.value)}/></div>
+                  <div><label>{t('income_amount')}</label><NumInput value={inc.monthly} onChange={v=>upIncome(inc.id,'monthly',v)}/></div>
+                  <div><label>{t('income_freq')}</label><select value={inc.frequency||'annual'} onChange={e=>upIncome(inc.id,'frequency',e.target.value)}><option value="annual">{t('freq_annual')}</option><option value="monthly">{t('freq_monthly')}</option><option value="quarterly">{t('freq_quarterly')}</option><option value="one-off">{t('freq_one_off')}</option></select></div>
+                </div>
+                <div className="input-row-3">
+                  <div><label>{t('currency')}</label><select value={inc.ccy||'EUR'} onChange={e=>upIncome(inc.id,'ccy',e.target.value)}>{CURRENCIES.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+                  <div><label>{t('income_start')}</label><input type="number" value={inc.startYear} onChange={e=>upIncome(inc.id,'startYear',+e.target.value)}/></div>
+                  <div><label>{t('income_end')}</label><input type="number" value={inc.endYear||''} onChange={e=>upIncome(inc.id,'endYear',e.target.value?+e.target.value:null)} placeholder={t('ongoing')}/></div>
+                </div>
+                <div className="input-row-3">
+                  <div><label>{t('income_growth')}</label><div className="slider-row"><input type="range" min={0} max={10} step={0.5} value={inc.growthPct||0} onChange={e=>upIncome(inc.id,'growthPct',+e.target.value)}/><span className="slider-val">{inc.growthPct||0}%</span></div></div>
+                </div>
+                <div className="toggle-row">
+                  <span className={'toggle'+(inc.deTax?' on':'')} onClick={()=>upIncome(inc.id,'deTax',!inc.deTax)}></span><span style={{fontSize:'10px',color:'var(--grey)'}}>{t('income_tax')}</span>
+                  <span style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:4}}>
+                    <span className={'toggle'+(inc.takesLeave?' on':'')} onClick={()=>upIncome(inc.id,'takesLeave',!inc.takesLeave)}></span>
+                    <span style={{fontSize:'10px',color:'var(--grey)'}}>{t('parental_leave')}</span>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </Card>
+
+          {/* Surplus Allocation */}
+          <Card title={t('surplus_alloc_title')} emoji="📊" tip={t('surplus_alloc_tip')} defaultOpen={true}>
+            {assets.filter(a=>a.type!=='property').map(a=>{
+              const othersTotal=assets.filter(x=>x.id!==a.id&&x.type!=='property').reduce((s,x)=>s+(x.allocPct||0),0);
+              const maxSlider=100-othersTotal;
+              return(
+                <div key={a.id} style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                  <span style={{fontSize:'11px',fontWeight:600,minWidth:90,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.name||a.type}</span>
+                  <input type="range" min={0} max={maxSlider} step={5} value={Math.min(a.allocPct||0,maxSlider)} onChange={e=>upAllocPct(a.id,+e.target.value)} style={{flex:1,height:4}}/>
+                  <span style={{fontSize:'11px',fontWeight:700,minWidth:32,textAlign:'right'}}>{a.allocPct||0}%</span>
+                </div>
+              );
+            })}
+            {(()=>{const totalAlloc=assets.filter(a=>a.type!=='property').reduce((s,a)=>s+(a.allocPct||0),0);const cashPct=Math.max(0,100-totalAlloc);return(
+              <div style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderTop:'1px solid var(--border)'}}>
+                <span style={{fontSize:'11px',fontWeight:600,minWidth:90}}>💰 {t('alloc_cash')}</span>
+                <div style={{flex:1,height:4,background:'var(--border)',borderRadius:2,position:'relative'}}><div style={{height:'100%',width:cashPct+'%',background:'var(--gold)',borderRadius:2}}></div></div>
+                <span style={{fontSize:'11px',fontWeight:700,minWidth:32,textAlign:'right'}}>{cashPct}%</span>
+              </div>
+            );})()}
+          </Card>
+
+          {/* Spending */}
+          <Card title={t('spending')} emoji="🛒" onAdd={addAdHoc} addLabel={t('add')} tip={t('tip_spending')}>
+            <div className="input-row" style={{marginBottom:8}}>
+              <div><label>{t('spend_baseline')}</label><NumInput value={baselineSpend} onChange={setBaselineSpend}/></div>
+              <div><label>{t('spend_inflation')}</label><div className="slider-row"><input type="range" min={0} max={8} step={0.5} value={spendInflation||0} onChange={e=>setSpendInflation(+e.target.value)}/><span className="slider-val">{spendInflation||0}%</span></div></div>
+            </div>
+            {adHocSpending.map(item=>(
+              <div key={item.id} className="dynamic-item">
+                <button className="remove-btn" onClick={()=>rmAdHoc(item.id)}>✕</button>
+                <div className="input-row-3">
+                  <div><label>{t('spend_label')}</label><input type="text" value={item.label} onChange={e=>upAdHoc(item.id,'label',e.target.value)}/></div>
+                  <div><label>{t('spend_amount')}</label><NumInput value={item.amount} onChange={v=>upAdHoc(item.id,'amount',v)}/></div>
+                  <div><label>{t('currency')}</label><select value={item.ccy||'EUR'} onChange={e=>upAdHoc(item.id,'ccy',e.target.value)}>{CURRENCIES.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+                </div>
+                <div className="input-row">
+                  <div><label>{t('spend_start')}</label><input type="number" value={item.startYear} onChange={e=>upAdHoc(item.id,'startYear',+e.target.value)}/></div>
+                  <div><label>{t('spend_freq')}</label><select value={item.frequency} onChange={e=>upAdHoc(item.id,'frequency',e.target.value)}><option value="one-off">{t('freq_one_off')}</option><option value="monthly">{t('freq_monthly')}</option><option value="quarterly">{t('freq_quarterly')}</option><option value="annual">{t('freq_annual')}</option></select></div>
+                </div>
+              </div>
+            ))}
+          </Card>
+
+          {/* Children */}
+          <Card title={t('children')} emoji="👶" onAdd={children.length<3?addChild:null} addLabel={t('add')} tip={t('tip_children')} defaultOpen={children.length>0}>
+            <div style={{fontSize:'9px',color:'var(--grey)',marginBottom:8,padding:'3px 6px',background:'var(--light)',borderRadius:4}}>{t('children_tip')}</div>
+            <div style={{padding:'8px 10px',background:'var(--light)',borderRadius:8,marginBottom:10,border:'1px solid var(--border)'}}>
+              <div className="toggle-row" style={{marginBottom:berlinKita?0:6}}>
+                <span className={'toggle'+(berlinKita?' on':'')} onClick={()=>{setBerlinKita(!berlinKita);if(!berlinKita)setKitaCost(0);else setKitaCost(450);}}></span>
+                <span style={{fontSize:'10px',fontWeight:600}}>{t('kita_berlin_label')}</span>
+              </div>
+              {!berlinKita && (
+                <div className="input-row" style={{marginTop:6}}>
+                  <div><label>{t('kita_cost_label')}</label><input type="number" value={kitaCost} onChange={e=>setKitaCost(+e.target.value)} style={{width:80}}/><span style={{fontSize:'9px',color:'var(--grey)',marginLeft:4}}>€/mo</span></div>
+                </div>
+              )}
+            </div>
+            {children.map((ch,idx)=>(
+              <div key={ch.id} className="dynamic-item">
+                <button className="remove-btn" onClick={()=>rmChild(ch.id)}>✕</button>
+                <div style={{fontSize:'11px',fontWeight:600,marginBottom:6,color:'var(--teal)'}}>👶 {t('child_n')} {idx+1}</div>
+                <div className="input-row">
+                  <div><label>{t('child_birth_year')}</label><input type="number" value={ch.birthYear} onChange={e=>upChild(ch.id,'birthYear',+e.target.value)}/></div>
+                </div>
+                <div style={{marginTop:8,fontSize:'10px',fontWeight:600,color:'var(--grey)',marginBottom:4}}>{t('elternzeit_split')}</div>
+                <div className="slider-row">
+                  <label>{name||t('person1')}</label><input type="range" min={0} max={36} step={1} value={ch.leaveMonths1||0} onChange={e=>upChild(ch.id,'leaveMonths1',+e.target.value)}/><span className="slider-val">{ch.leaveMonths1||0}mo</span>
+                </div>
+                <div className="slider-row">
+                  <label>{partnerName||t('person2')}</label><input type="range" min={0} max={36} step={1} value={ch.leaveMonths2||0} onChange={e=>upChild(ch.id,'leaveMonths2',+e.target.value)}/><span className="slider-val">{ch.leaveMonths2||0}mo</span>
+                </div>
+                {(ch.leaveMonths1||0)+(ch.leaveMonths2||0)>36 && <div style={{fontSize:'9px',color:'var(--coral)',marginTop:2}}>{t('max_exceeded')}</div>}
+              </div>
+            ))}
+            {children.length===0 && <div style={{fontSize:'11px',color:'var(--grey)',textAlign:'center',padding:8}}>{t('no_children')}</div>}
+          </Card>
+
+          {/* Properties */}
+          <Card title={t('properties')} emoji="🏠" onAdd={addProp} addLabel={t('add')} tip={t('tip_properties')} defaultOpen={properties.length>0}>
+            {properties.map((p,idx)=>(
+              <div key={p.id} className="dynamic-item">
+                <button className="remove-btn" onClick={()=>rmProp(p.id)}>✕</button>
+                <div className="input-row">
+                  <div><label>{t('prop_label')}</label><input type="text" value={p.label} onChange={e=>upProp(p.id,'label',e.target.value)} placeholder={t('property_bucket')+' '+(idx+1)}/></div>
+                </div>
+                <div className="slider-row"><label>{t('prop_price')}</label><input type="range" min={100000} max={1500000} step={25000} value={p.price||500000} onChange={e=>upProp(p.id,'price',+e.target.value)}/><span className="slider-val">€{fmtK(p.price||500000)}</span></div>
+                <div className="toggle-row" style={{marginBottom:8}}>
+                  <span className={'toggle'+(p.owned?' on':'')} onClick={()=>upProp(p.id,'owned',!p.owned)}></span>
+                  <span style={{fontSize:'10px',color:'var(--grey)'}}>{t('already_own')}</span>
+                </div>
+                {p.owned?(<div className="slider-row"><label>{t('years_owned')}</label><input type="range" min={0} max={25} step={1} value={p.yearsOwned||0} onChange={e=>upProp(p.id,'yearsOwned',+e.target.value)}/><span className="slider-val">{p.yearsOwned||0}yr</span></div>)
+                :(<div style={{marginBottom:8}}><label>{t('prop_age')}</label><input type="number" value={(birthYear||1994)+(p.purchaseAge||45)} onChange={e=>upProp(p.id,'purchaseAge',(+e.target.value)-(birthYear||1994))}/></div>)}
+                <div className="slider-row"><label>{t('prop_down')}</label><input type="range" min={5} max={50} step={5} value={p.downPct||20} onChange={e=>upProp(p.id,'downPct',+e.target.value)}/><span className="slider-val">{p.downPct||20}%</span></div>
+                {!p.owned && <div style={{background:'var(--bg)',borderRadius:8,padding:'8px 10px',marginBottom:8,border:'1px solid var(--border)'}}>
+                  <div style={{fontSize:'10px',fontWeight:600,color:'var(--grey)',marginBottom:4}}>{t('prop_neben_total')}: {fmt(Math.round((p.price||0)*((p.grunderwerbPct||6)+(p.notarPct||1.5)+(p.maklerPct||3.57))/100))} EUR ({((p.grunderwerbPct||6)+(p.notarPct||1.5)+(p.maklerPct||3.57)).toFixed(1)}%)</div>
+                  <div className="slider-row"><label>{t('prop_grunderwerb')}</label><input type="range" min={0} max={10} step={0.5} value={p.grunderwerbPct||6} onChange={e=>upProp(p.id,'grunderwerbPct',+e.target.value)}/><span className="slider-val">{p.grunderwerbPct||6}%</span></div>
+                  <div className="slider-row"><label>{t('prop_notar')}</label><input type="range" min={0} max={4} step={0.25} value={p.notarPct||1.5} onChange={e=>upProp(p.id,'notarPct',+e.target.value)}/><span className="slider-val">{p.notarPct||1.5}%</span></div>
+                  <div className="slider-row"><label>{t('prop_makler')}</label><input type="range" min={0} max={7} step={0.5} value={p.maklerPct||3.57} onChange={e=>upProp(p.id,'maklerPct',+e.target.value)}/><span className="slider-val">{p.maklerPct||3.57}%</span></div>
+                </div>}
+                <div className="slider-row"><label>{t('prop_rate')}</label><input type="range" min={0.5} max={8} step={0.25} value={p.rate||3} onChange={e=>upProp(p.id,'rate',+e.target.value)}/><span className="slider-val">{p.rate||3}%</span></div>
+                <div className="slider-row"><label>{t('prop_term')}</label><input type="range" min={10} max={35} step={5} value={p.term||25} onChange={e=>upProp(p.id,'term',+e.target.value)}/><span className="slider-val">{p.term||25}yr</span></div>
+                <div className="slider-row"><label>{t('prop_growth')}</label><input type="range" min={0} max={8} step={0.5} value={p.growthPct||2} onChange={e=>upProp(p.id,'growthPct',+e.target.value)}/><span className="slider-val">{p.growthPct||2}%</span></div>
+              </div>
+            ))}
+          </Card>
+
+          {/* Retirement */}
+          <Card title={t('retirement')} emoji="🏖️" tip={t('tip_retirement')}>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:'10px',fontWeight:600,color:'var(--teal)',marginBottom:6,textTransform:'uppercase'}}>{t('retire_age_label')}</div>
+              <div className="slider-row"><label>{name||t('you')}</label><input type="range" min={55} max={75} value={retireAge} onChange={e=>setRetireAge(+e.target.value)}/><span className="slider-val">{retireAge}</span></div>
+              <div className="slider-row"><label>{partnerName||t('partner')}</label><input type="range" min={55} max={75} value={retireAgePartner} onChange={e=>setRetireAgePartner(+e.target.value)}/><span className="slider-val">{retireAgePartner}</span></div>
+            </div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:'10px',fontWeight:600,color:'var(--teal)',marginBottom:6,textTransform:'uppercase'}}>{t('pension_start_label')}</div>
+              <div className="slider-row"><label>{name||t('you')}</label><input type="range" min={60} max={70} value={pensionDrawAge} onChange={e=>setPensionDrawAge(+e.target.value)}/><span className="slider-val">{pensionDrawAge}</span></div>
+              <div className="slider-row"><label>{partnerName||t('partner')}</label><input type="range" min={60} max={70} value={pensionDrawAgePartner} onChange={e=>setPensionDrawAgePartner(+e.target.value)}/><span className="slider-val">{pensionDrawAgePartner}</span></div>
+            </div>
+            <div style={{borderTop:'1px solid var(--border)',paddingTop:10,marginTop:4}}>
+              <div style={{fontSize:'10px',fontWeight:600,color:'var(--teal)',marginBottom:4,textTransform:'uppercase'}}>{t('salary_history')}</div>
+              <div className="section-tip">{t('pension_tip')}</div>
+            </div>
+            <div style={{marginBottom:6,fontSize:'11px',fontWeight:600,color:'var(--dark)'}}>👤 {name||t('you')}</div>
+            {pensionPeriodsYou.map(p=>(
+              <div key={p.id} className="dynamic-item">
+                {pensionPeriodsYou.length>1 && <button className="remove-btn" onClick={()=>rmPeriodYou(p.id)}>✕</button>}
+                <div className="input-row">
+                  <div><label>{t('period_label')}</label><input type="text" value={p.label} onChange={e=>upPeriodYou(p.id,'label',e.target.value)}/></div>
+                  <div><label>{t('period_salary')}</label><NumInput value={p.salary} onChange={v=>upPeriodYou(p.id,'salary',v)}/></div>
+                </div>
+                <div className="input-row">
+                  <div><label>{t('period_start')}</label><input type="number" value={p.startYear} onChange={e=>upPeriodYou(p.id,'startYear',+e.target.value)}/></div>
+                  <div><label>{t('period_end')}</label><input type="number" value={p.endYear||''} onChange={e=>upPeriodYou(p.id,'endYear',e.target.value?+e.target.value:null)} placeholder={t('ongoing')}/></div>
+                </div>
+              </div>
+            ))}
+            <button className="btn btn-outline btn-sm" onClick={addPeriodYou} style={{marginBottom:12}}>{t('add_period')}</button>
+            <div style={{marginBottom:6,fontSize:'11px',fontWeight:600,color:'var(--dark)'}}>👤 {partnerName||t('partner')}</div>
+            {pensionPeriodsPartner.map(p=>(
+              <div key={p.id} className="dynamic-item">
+                {pensionPeriodsPartner.length>1 && <button className="remove-btn" onClick={()=>rmPeriodPartner(p.id)}>✕</button>}
+                <div className="input-row">
+                  <div><label>{t('period_label')}</label><input type="text" value={p.label} onChange={e=>upPeriodPartner(p.id,'label',e.target.value)}/></div>
+                  <div><label>{t('period_salary')}</label><NumInput value={p.salary} onChange={v=>upPeriodPartner(p.id,'salary',v)}/></div>
+                </div>
+                <div className="input-row">
+                  <div><label>{t('period_start')}</label><input type="number" value={p.startYear} onChange={e=>upPeriodPartner(p.id,'startYear',+e.target.value)}/></div>
+                  <div><label>{t('period_end')}</label><input type="number" value={p.endYear||''} onChange={e=>upPeriodPartner(p.id,'endYear',e.target.value?+e.target.value:null)} placeholder={t('ongoing')}/></div>
+                </div>
+              </div>
+            ))}
+            <button className="btn btn-outline btn-sm" onClick={addPeriodPartner}>{t('add_period')}</button>
+            <div style={{marginTop:12,padding:8,background:'var(--teal-bg)',borderRadius:6,fontSize:'11px',color:'var(--teal)'}}>
+              📊 {t('calc_points').replace('{0}',totalPtsYou.toFixed(1)).replace('{1}',totalPtsPartner.toFixed(1))}
+            </div>
+          </Card>
+
+          <div style={{display:'flex',gap:8,marginTop:8}}>
+            <button className="btn btn-outline" onClick={resetAll}>🔄 {t('reset')}</button>
+          </div>
+        </div>
+
+        {/* ===== RIGHT PANEL ===== */}
+        <div className="right-panel" ref={rightPanelRef}>
+          <div className="tabs">
+            {[['overview','tab_overview'],['cashflow','tab_planner'],['projection','tab_projection'],['insights','tab_insights'],['methodology','tab_method']].map(([key,lbl])=>(
+              <button key={key} className={'tab-btn'+(activeTab===key?' active':'')} onClick={()=>setActiveTab(key)}>{t(lbl)}</button>
+            ))}
+          </div>
+
+          {/* ═══ OVERVIEW — Command Center ═══ */}
+          {activeTab==='overview' && (()=>{
+            const firstNegLiquid=data.find(d=>d.age>curAge&&d.liquidAssets<0);
+            const negAge=data.find(d=>d.age>retireAge&&d.liquidAssets<0);
+            const runwayYrs=negAge?(negAge.age-retireAge):null;
+            const cashTotal=assets.filter(a=>a.type==='cash').reduce((s,a)=>s+toEUR(a.value,a.ccy||'EUR'),0);
+            const totalLiquid=assets.filter(a=>a.type!=='property').reduce((s,a)=>s+toEUR(a.value,a.ccy||'EUR'),0);
+            const cashPct=totalLiquid>0?Math.round(cashTotal/totalLiquid*100):0;
+            const peakD=data.reduce((best,d)=>d.totalNetWorth>best.totalNetWorth?d:best,data[0]);
+            const atRetire=data.find(d=>d.age===retireAge)||{};
+            // Detect liquidity crisis: find when liquid can't cover 1yr spending
+            const liquidCrisis=data.find(d=>d.age>curAge&&d.totalSpend>0&&d.liquidAssets<d.totalSpend&&d.nonLiquidAssets>d.liquidAssets);
+            // Takeaway logic — prioritise liquidity warnings
+            let takeaway='';
+            if(firstNegLiquid&&firstNegLiquid.age<retireAge)takeaway='🚨 '+t('ov_takeaway_early_neg').replace('{0}',firstNegLiquid.age).replace('{1}',firstNegLiquid.year);
+            else if(firstNegLiquid)takeaway='⚠️ '+t('ov_takeaway_neg').replace('{0}',firstNegLiquid.age).replace('{1}',firstNegLiquid.age-retireAge);
+            else if(liquidCrisis&&properties.length>0)takeaway='⚠️ '+t('ov_takeaway_illiquid').replace('{0}',liquidCrisis.age).replace('{1}',Math.round(liquidCrisis.liquidAssets/Math.max(1,liquidCrisis.totalSpend)));
+            else takeaway='✅ '+t('ov_takeaway_pos').replace('{0}',fmtK(peakD.totalNetWorth)).replace('{1}',peakD.age).replace('{2}',END_AGE);
+            // CTA logic — multiple nudges
+            const nudges=[];
+            if(mc.successRate<60)nudges.push({icon:'🚨',text:t('ov_nudge_mc').replace('{0}',mc.successRate),link:'https://www.investopedia.com/terms/m/montecarlosimulation.asp'});
+            if(cashPct>35&&totalLiquid>10000)nudges.push({icon:'💤',text:t('ov_nudge_cash').replace('{0}',fmtK(cashTotal)).replace('{1}',cashPct)});
+            if(runwayYrs!==null&&runwayYrs<20)nudges.push({icon:'⏰',text:t('ov_nudge_runway').replace('{0}',runwayYrs).replace('{1}',fmtK(Math.round(monthlySurplus*0.3)))});
+            if(nudges.length===0)nudges.push({icon:'💡',text:t('ov_nudge_healthy')});
+            return(
+              <div>
+                {/* ── Wealth Over Time (stacked bar) ── */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:4,color:'var(--teal)'}}>📊 {t('ov_chart_title')}</h3>
+                  <div className="section-tip">{t('ov_chart_tip')}</div>
+                  <div className="chart-container"><canvas ref={chartRef}></canvas></div>
+                  {/* Takeaway box */}
+                  <div style={{marginTop:10,padding:'10px 12px',background:negAge?(darkMode?'rgba(212,168,67,0.15)':'#fff3cd'):(darkMode?'rgba(0,84,81,0.15)':'#d4edda'),borderRadius:8,fontSize:'11px',lineHeight:'1.5',color:darkMode?'#ddd':'#1b1b1b'}}>{takeaway}</div>
+                </div>
+
+                {/* ── KPI Cards (clickable to expand explanation) ── */}
+                {(()=>{
+                  const hnwiAge=data.find(d=>d.liquidAssets>=1000000);
+                  const millAge=data.find(d=>d.totalNetWorth>=1000000);
+                  const hnwiLabel=hnwiAge?(hnwiAge.age<=curAge?t('ov_hnwi_already'):t('ov_hnwi_age').replace('{0}',hnwiAge.age)):t('ov_hnwi_never');
+                  const millLabel=millAge?(millAge.age<=curAge?t('ov_hnwi_already'):t('ov_hnwi_age').replace('{0}',millAge.age)):t('ov_hnwi_never');
+                  const nextYrData=data.find(d=>d.age===curAge+1);
+                  const nwGrowth=nextYrData?(nextYrData.totalNetWorth-(curData.totalNetWorth||0)):0;
+                  return(
+                <div className="kpi-row">
+                  <div className="kpi-card" style={{padding:'14px 12px',cursor:'pointer'}} onClick={()=>setKpiOpen(kpiOpen==='nw'?'':'nw')}>
+                    <div className="kpi-label">{t('ov_nw_today')} <span style={{fontSize:'9px',opacity:0.5}}>ⓘ</span></div>
+                    <div className="kpi-value" style={{fontSize:'22px'}}>€{fmtK(curData.totalNetWorth||0)}</div>
+                    <div className="kpi-sub" style={{color:nwGrowth>=0?'var(--teal)':'var(--coral)'}}>{nwGrowth>=0?t('ov_nw_sub_grow').replace('{0}',fmtK(nwGrowth)):t('ov_nw_sub_shrink').replace('{0}',fmtK(Math.abs(nwGrowth)))}</div>
+                    {kpiOpen==='nw'&&<div style={{marginTop:8,paddingTop:8,borderTop:'1px solid var(--border)',fontSize:'10px',lineHeight:'1.5',color:'var(--grey)'}}>{t('ov_explain_nw')}</div>}
+                  </div>
+                  <div className="kpi-card" style={{padding:'14px 12px',cursor:'pointer'}} onClick={()=>setKpiOpen(kpiOpen==='mc'?'':'mc')}>
+                    <div className="kpi-label">{t('ov_success_rate')} <span style={{fontSize:'9px',opacity:0.5}}>ⓘ</span></div>
+                    <div className="kpi-value" style={{fontSize:'22px',color:mc.successRate>=80?'#005451':mc.successRate>=50?'#D4A843':'#c23030'}}>{mc.successRate}%</div>
+                    <div className="kpi-sub">{mc.successRate>=80?'✅ '+t('ov_strong'):mc.successRate>=50?'⚠️ '+t('ov_moderate'):'❌ '+t('ov_at_risk')}</div>
+                    {kpiOpen==='mc'&&<div style={{marginTop:8,paddingTop:8,borderTop:'1px solid var(--border)',fontSize:'10px',lineHeight:'1.5',color:'var(--grey)'}}>{t('ov_explain_mc')}</div>}
+                  </div>
+                  <div className="kpi-card" style={{padding:'14px 12px',cursor:'pointer'}} onClick={()=>setKpiOpen(kpiOpen==='lasts'?'':'lasts')}>
+                    <div className="kpi-label">{t('ov_money_lasts')} <span style={{fontSize:'9px',opacity:0.5}}>ⓘ</span></div>
+                    <div className="kpi-value" style={{fontSize:'22px',color:firstNegLiquid?'#c23030':liquidCrisis?'#D4A843':'#005451'}}>{firstNegLiquid?t('th_age')+' '+firstNegLiquid.age:liquidCrisis?t('th_age')+' '+liquidCrisis.age+' ⚠️':t('th_age')+' 100+'}</div>
+                    <div className="kpi-sub">{firstNegLiquid?(firstNegLiquid.age<retireAge?t('ov_lasts_before_retire'):t('ov_runway_yrs').replace('{0}',firstNegLiquid.age-retireAge).replace('{1}',retireAge)):liquidCrisis?t('ov_lasts_illiquid'):t('ov_runway_inf')}</div>
+                    {kpiOpen==='lasts'&&<div style={{marginTop:8,paddingTop:8,borderTop:'1px solid var(--border)',fontSize:'10px',lineHeight:'1.5',color:'var(--grey)'}}>{t('ov_explain_lasts')}</div>}
+                  </div>
+                  <div className="kpi-card" style={{padding:'14px 12px',cursor:'pointer'}} onClick={()=>setKpiOpen(kpiOpen==='hnwi'?'':'hnwi')}>
+                    <div className="kpi-label">{t('ov_hnwi')} <span style={{fontSize:'9px',opacity:0.5}}>ⓘ</span></div>
+                    <div className="kpi-value" style={{fontSize:'22px',color:hnwiAge?'#005451':'var(--grey)'}}>{hnwiLabel}</div>
+                    <div className="kpi-sub">{hnwiAge?'€1M+ liquid':'< €1M liquid'}</div>
+                    {kpiOpen==='hnwi'&&<div style={{marginTop:8,paddingTop:8,borderTop:'1px solid var(--border)',fontSize:'10px',lineHeight:'1.5',color:'var(--grey)'}}>{t('ov_explain_hnwi')}</div>}
+                  </div>
+                  <div className="kpi-card" style={{padding:'14px 12px',cursor:'pointer'}} onClick={()=>setKpiOpen(kpiOpen==='mill'?'':'mill')}>
+                    <div className="kpi-label">{t('ov_millionaire')} <span style={{fontSize:'9px',opacity:0.5}}>ⓘ</span></div>
+                    <div className="kpi-value" style={{fontSize:'22px',color:millAge?'#D4A843':'var(--grey)'}}>{millLabel}</div>
+                    <div className="kpi-sub">{millAge?'€1M+ net worth':'< €1M net worth'}</div>
+                    {kpiOpen==='mill'&&<div style={{marginTop:8,paddingTop:8,borderTop:'1px solid var(--border)',fontSize:'10px',lineHeight:'1.5',color:'var(--grey)'}}>{t('ov_explain_mill')}</div>}
+                  </div>
+                </div>
+                  );
+                })()}
+                {/* Wealth Composition — Today vs In 15 Years (side by side) */}
+                {(()=>{
+                  const colors=['#005451','#D4A843','#B55B64','#8b5aa3','#6ee7b7','#4a9eff','#ff9f43','#aaa'];
+                  const allAssets=[...assets.map(a=>({name:a.name||a.label||t('type_'+a.type)||a.type,value:toEUR(a.value,a.ccy||'EUR')})),...properties.map(p=>{const by2=birthYear||1994;const py=p.owned?CUR_YR-(p.yearsOwned||0):by2+(p.purchaseAge||45);const isOwned=CUR_YR>=py;if(!isOwned)return null;const mktVal=(p.price||0)*Math.pow(1+(p.growthPct||2)/100,CUR_YR-py);const loan=(p.price||0)*(1-(p.downPct||20)/100);const r=(p.rate||3.5)/100/12;const n=(p.term||25)*12;const pmts=Math.min((CUR_YR-py)*12,n);let rem=loan;if(pmts<n&&r>0)rem=loan*Math.pow(1+r,pmts)-(loan*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1))*((Math.pow(1+r,pmts)-1)/r);else if(pmts>=n)rem=0;return{name:p.label||'Property',value:Math.round(mktVal-Math.max(0,rem))};})].filter(Boolean).filter(a=>a.value>0).sort((a,b)=>b.value-a.value);
+                  const totalVal=allAssets.reduce((s,a)=>s+a.value,0);
+                  const futureAge=curAge+15;
+                  const futureData=data.find(d=>d.age===futureAge);
+                  const futureItems=[];
+                  if(futureData){(futureData.assetBreakdown||[]).forEach(a=>{if(a.value>0)futureItems.push(a);});(futureData.propBreakdown||[]).forEach(p=>{if(p.value>0)futureItems.push(p);});}
+                  futureItems.sort((a,b)=>b.value-a.value);
+                  const futureTotal=futureItems.reduce((s,a)=>s+a.value,0);
+                  if(allAssets.length===0)return null;
+                  return(
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
+                      <div className="card" style={{marginBottom:0}}>
+                        <h3 style={{fontSize:'11px',fontWeight:700,marginBottom:6,color:'var(--teal)'}}>🧩 {t('ov_composition')}</h3>
+                        <div style={{width:'100%',maxWidth:140,height:140,margin:'0 auto 8px'}}><canvas ref={pieRef}></canvas></div>
+                        {allAssets.slice(0,5).map((a,i)=>(
+                          <div key={i} style={{display:'flex',alignItems:'center',gap:4,marginBottom:3}}>
+                            <span style={{width:8,height:8,borderRadius:'50%',background:colors[i%8],flexShrink:0}}></span>
+                            <span style={{fontSize:'10px',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.name}</span>
+                            <span style={{fontSize:'10px',fontWeight:600}}>{totalVal>0?Math.round(a.value/totalVal*100):0}%</span>
+                          </div>
+                        ))}
+                        <div style={{fontSize:'11px',fontWeight:700,marginTop:6,paddingTop:4,borderTop:'1px solid var(--border)',textAlign:'center'}}>€{fmtK(totalVal)}</div>
+                      </div>
+                      <div className="card" style={{marginBottom:0}}>
+                        <h3 style={{fontSize:'11px',fontWeight:700,marginBottom:6,color:'var(--teal)'}}>🔮 {t('ov_comp_future')}</h3>
+                        <div style={{width:'100%',maxWidth:140,height:140,margin:'0 auto 8px'}}><canvas ref={pie2Ref}></canvas></div>
+                        {futureItems.slice(0,5).map((a,i)=>(
+                          <div key={i} style={{display:'flex',alignItems:'center',gap:4,marginBottom:3}}>
+                            <span style={{width:8,height:8,borderRadius:'50%',background:colors[i%8],flexShrink:0}}></span>
+                            <span style={{fontSize:'10px',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{a.name}</span>
+                            <span style={{fontSize:'10px',fontWeight:600}}>{futureTotal>0?Math.round(a.value/futureTotal*100):0}%</span>
+                          </div>
+                        ))}
+                        <div style={{fontSize:'11px',fontWeight:700,marginTop:6,paddingTop:4,borderTop:'1px solid var(--border)',textAlign:'center'}}>€{fmtK(futureTotal)}</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* ── Annual Spending by Age — Component Breakdown (Chart.js) ── */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:4,color:'var(--teal)'}}>📊 {t('ov_spend_chart_title')}</h3>
+                  <div className="section-tip" style={{marginBottom:8}}>{t('ov_spend_chart_tip')}</div>
+                  <div className="chart-container"><canvas ref={spendBarRef}></canvas></div>
+                </div>
+
+
+                {/* ── Action Nudges ── */}
+                {nudges.map((n,i)=>(
+                  <div key={i} className="cta-nudge" style={{marginBottom:8}}>
+                    <span style={{fontSize:'16px'}}>{n.icon}</span>
+                    <span className="cta-text">{n.text}{n.link && <>{' '}<a href={n.link} target="_blank" style={{color:'var(--teal)',fontSize:'10px'}}>{t('ov_learn_more')}</a></>}</span>
+                  </div>
+                ))}
+
+                {/* ── Key Ages ── */}
+                <div className="card" style={{marginTop:4}}>
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:10,color:'var(--teal)'}}>🎯 {t('h_key_ages')}</h3>
+                  <table>
+                    <thead><tr><th>{t('th_event')}</th><th>{t('th_age')}</th><th>{t('th_year')}</th><th>{t('th_monthly_spend')}</th><th>{t('th_nw')}</th></tr></thead>
+                    <tbody>
+                      {data.filter(d=>d.event).map(d=>(
+                        <tr key={d.age}><td>{d.event}</td><td>{d.age}</td><td>{d.year}</td><td style={{color:'var(--grey)'}}>€{fmt(Math.round(d.totalSpend/12))}</td><td style={{fontWeight:600,color:d.totalNetWorth>=0?'var(--teal)':'var(--red)'}}>€{fmtK(d.totalNetWorth)}</td></tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ═══ PROJECTION — Future Simulator ═══ */}
+          {activeTab==='projection' && (()=>{
+            const maxNW=Math.max(...data.map(d=>d.totalNetWorth));
+            const peakAge=data.find(d=>d.totalNetWorth===maxNW);
+            const negAge=data.find(d=>d.liquidAssets<0);
+            return(
+              <div>
+                {/* Top metrics */}
+                <div className="kpi-row" style={{gridTemplateColumns:'1fr 1fr'}}>
+                  <div className="kpi-card" style={{padding:'14px 12px'}}>
+                    <div className="kpi-label">{t('peak_wealth')}</div>
+                    <div className="kpi-value" style={{fontSize:'20px'}}>€{fmtK(maxNW)}</div>
+                    <div className="kpi-sub">{t('th_age')} {peakAge?peakAge.age:'—'}</div>
+                  </div>
+                  <div className="kpi-card" style={{padding:'14px 12px'}}>
+                    <div className="kpi-label">{t('pj_depletion')}</div>
+                    <div className="kpi-value" style={{fontSize:'20px',color:!negAge?'#005451':negAge.age>=90?'#D4A843':'#c23030'}}>{negAge?negAge.age:t('pj_depletion_never')}</div>
+                    <div className="kpi-sub">{negAge?'⚠️ '+t('pj_depletion_zero'):'✅ '+t('pj_depletion_pos')}</div>
+                  </div>
+                </div>
+
+                {/* Projection chart */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:6,color:'var(--teal)'}}>📈 {t('pj_chart_title')}</h3>
+                  <div className="section-tip">{t('pj_chart_tip')}</div>
+                  <div className="chart-container"><canvas ref={donutRef}></canvas></div>
+                </div>
+
+                {/* Sliders */}
+                <div className="card" style={{marginBottom:12}}>
+                  <div style={{fontSize:'10px',fontWeight:600,color:'var(--teal)',marginBottom:8,textTransform:'uppercase'}}>{t('pj_whatif')}</div>
+                  <div className="slider-row"><label>🏖️ {t('retire_your_age')}</label><input type="range" min={55} max={75} value={retireAge} onChange={e=>setRetireAge(+e.target.value)}/><span className="slider-val">{retireAge}</span></div>
+                  <div className="slider-row"><label>🏖️ {t('retire_partner_age')}</label><input type="range" min={55} max={75} value={retireAgePartner} onChange={e=>setRetireAgePartner(+e.target.value)}/><span className="slider-val">{retireAgePartner}</span></div>
+                </div>
+
+                {/* Year-by-year (every 5th year + events) */}
+                <div className="card">
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:10,color:'var(--teal)'}}>📋 {t('h_projection')}</h3>
+                  <div style={{overflowX:'auto'}}>
+                    <table>
+                      <thead><tr><th>{t('th_age')}</th><th>{t('th_year')}</th><th>{t('th_event')}</th><th>{t('th_earn')}</th><th>{t('th_spend')}</th><th>{t('th_net')}</th><th>{t('th_liquid')}</th><th>{t('th_nw')}</th></tr></thead>
+                      <tbody>
+                        {data.filter(d=>d.event||d.age%5===0).map(d=>(
+                          <tr key={d.age} style={d.event?{background:'var(--teal-bg)'}:{}}>
+                            <td>{d.age}</td><td>{d.year}</td><td style={{fontSize:'10px'}}>{d.event}</td>
+                            <td style={{color:'var(--teal)'}}>€{fmtK(d.totalIncome)}</td>
+                            <td style={{color:'var(--coral)'}}>€{fmtK(d.totalSpend)}</td>
+                            <td style={{color:d.netSaved>=0?'var(--teal)':'var(--red)',fontWeight:600}}>€{fmtK(d.netSaved)}</td>
+                            <td>€{fmtK(d.liquidAssets)}</td>
+                            <td style={{fontWeight:600}}>€{fmtK(d.totalNetWorth)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ═══ CASH FLOW — Where the money goes ═══ */}
+          {activeTab==='cashflow' && (()=>{
+            const savingsRate=totalMonthlyIncome>0?Math.round((totalMonthlyIncome-(baselineSpend||0))/totalMonthlyIncome*100):0;
+            const annualSurplus=(totalMonthlyIncome-(baselineSpend||0))*12;
+            // Lifetime cumulative surplus (current age to end)
+            const startIdx=data.findIndex(d=>d.age===curAge);
+            const cfSlice=data.slice(startIdx);
+            let cumSum=0;const cumData=cfSlice.map(d=>{cumSum+=d.totalIncome-d.totalSpend;return cumSum;});
+            const totalCumLifetime=cumData[cumData.length-1]||0;
+            // Best and worst years
+            const bestYr=cfSlice.reduce((b,d)=>(d.totalIncome-d.totalSpend)>(b.totalIncome-b.totalSpend)?d:b,cfSlice[0]);
+            const worstYr=cfSlice.reduce((w,d)=>(d.totalIncome-d.totalSpend)<(w.totalIncome-w.totalSpend)?d:w,cfSlice[0]);
+            // Spending breakdown items
+            const spItems=[];
+            spItems.push({icon:'🏠',label:t('baseline_label'),monthly:baselineSpend,color:'#005451'});
+            children.forEach((ch,i)=>{const cby=ch.birthYear||(birthYear+32);const ca=CUR_YR-cby;if(ca>=0&&ca<=22){let mc2=ca<1?1100:ca<3?700:ca<6?750:ca<10?800:ca<18?900:1000;if(ca<6){const kita2=berlinKita?0:(kitaCost||450);mc2+=kita2;}spItems.push({icon:'👶',label:t('children_label')+' '+(i+1),monthly:mc2,color:'#D4A843'});}});
+            properties.forEach(p=>{const py=p.owned?CUR_YR-(p.yearsOwned||0):birthYear+(p.purchaseAge||45);const tm=p.term||25;if(CUR_YR>=py&&CUR_YR<py+tm){const loan=(p.price||0)*(1-(p.downPct||20)/100);const r=(p.rate||3.5)/100/12;const n=tm*12;const pmt=r>0?loan*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1):loan/n;spItems.push({icon:'🏡',label:p.label||'Mortgage',monthly:Math.round(pmt),color:'#8b5a9c'});}});
+            adHocSpending.forEach(a=>{let mo=0;if(a.frequency==='monthly')mo=toEUR(a.amount,a.ccy||'EUR');else if(a.frequency==='quarterly')mo=toEUR(a.amount,a.ccy||'EUR')/3;else if(a.frequency==='annual')mo=toEUR(a.amount,a.ccy||'EUR')/12;if(mo>0)spItems.push({icon:'📌',label:a.label||'Ad-hoc',monthly:Math.round(mo),color:'#a8574f'});});
+            const totalSpendMo=spItems.reduce((s,i)=>s+i.monthly,0);
+            return(
+              <div>
+                {/* Top metrics — 3 column */}
+                <div className="kpi-row" style={{gridTemplateColumns:'1fr 1fr 1fr'}}>
+                  <div className="kpi-card">
+                    <div className="kpi-label">{t('cf_savings_rate')}</div>
+                    <div className="kpi-value" style={{color:savingsRate>=30?'#005451':savingsRate>=15?'#D4A843':'#c23030'}}>{savingsRate}%</div>
+                    <div className="kpi-sub">{savingsRate>=30?t('cf_excellent'):savingsRate>=15?t('cf_good'):t('cf_below')}</div>
+                  </div>
+                  <div className="kpi-card">
+                    <div className="kpi-label">{t('cf_annual_surplus')}</div>
+                    <div className="kpi-value" style={{fontSize:'20px',color:annualSurplus>=0?'#005451':'#c23030'}}>{annualSurplus>=0?'+':''}€{fmtK(annualSurplus)}</div>
+                    <div className="kpi-sub">€{fmt(Math.round(annualSurplus/12))}/mo</div>
+                  </div>
+                  <div className="kpi-card">
+                    <div className="kpi-label">{t('cf_cum_15yr')}</div>
+                    <div className="kpi-value" style={{fontSize:'20px',color:totalCumLifetime>=0?'#b8860b':'#c23030'}}>{totalCumLifetime>=0?'+':''}€{fmtK(totalCumLifetime)}</div>
+                    <div className="kpi-sub">{t('th_age')} {cfSlice[0]?.age}→{cfSlice[cfSlice.length-1]?.age}</div>
+                  </div>
+                </div>
+
+                {/* Bar Chart */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:2,color:'var(--teal)'}}>📊 {t('cf_chart_title')}</h3>
+                  <div className="section-tip" style={{marginBottom:8}}>{t('cf_chart_tip')}</div>
+                  <div className="bar-container"><canvas ref={barRef}></canvas></div>
+                  {/* Mini insights row under chart */}
+                  <div style={{display:'flex',gap:12,marginTop:10,flexWrap:'wrap'}}>
+                    <div style={{flex:1,minWidth:120,padding:'8px 10px',background:darkMode?'rgba(77,184,179,0.08)':'rgba(0,84,81,0.04)',borderRadius:8,border:'1px solid '+(darkMode?'rgba(77,184,179,0.2)':'rgba(0,84,81,0.12)')}}>
+                      <div style={{fontSize:'9px',fontWeight:600,color:'var(--grey)',marginBottom:2}}>{t('cf_best_yr')}</div>
+                      <div style={{fontSize:'12px',fontWeight:700,color:'var(--teal)'}}>{t('th_age')} {bestYr.age}: +€{fmtK(bestYr.totalIncome-bestYr.totalSpend)}</div>
+                    </div>
+                    <div style={{flex:1,minWidth:120,padding:'8px 10px',background:darkMode?'rgba(194,118,110,0.08)':'rgba(168,87,79,0.04)',borderRadius:8,border:'1px solid '+(darkMode?'rgba(194,118,110,0.2)':'rgba(168,87,79,0.12)')}}>
+                      <div style={{fontSize:'9px',fontWeight:600,color:'var(--grey)',marginBottom:2}}>{t('cf_worst_yr')}</div>
+                      <div style={{fontSize:'12px',fontWeight:700,color:worstYr.totalIncome-worstYr.totalSpend>=0?'var(--teal)':'var(--red)'}}>{t('th_age')} {worstYr.age}: {worstYr.totalIncome-worstYr.totalSpend>=0?'+':''}€{fmtK(worstYr.totalIncome-worstYr.totalSpend)}</div>
+                    </div>
+                  </div>
+                </div>
+
+
+                {/* Life events timeline — enhanced */}
+                <div className="card">
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:8,color:'var(--teal)'}}>🗓️ {t('cf_milestones')}</h3>
+                  {data.filter(d=>d.event).length===0 && <div style={{textAlign:'center',color:'var(--grey)',padding:16,fontSize:'11px'}}>{t('no_events')}</div>}
+                  {data.filter(d=>d.event).map((d,i,arr)=>{
+                    const net2=d.totalIncome-d.totalSpend;
+                    const prev=i>0?arr[i-1]:null;
+                    const prevNet=prev?(prev.totalIncome-prev.totalSpend):net2;
+                    const delta=net2-prevNet;
+                    return(
+                      <div key={d.age} className="planner-item" style={{borderLeft:'3px solid '+(net2>=0?'var(--teal)':'var(--red)'),paddingLeft:10,marginLeft:4}}>
+                        <div style={{fontSize:'20px'}}>{d.event.slice(0,2)}</div>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:600,fontSize:'12px'}}>{d.event.slice(2).trim()}</div>
+                          <div style={{fontSize:'10px',color:'var(--grey)'}}>{t('age_prefix')} {d.age} · {t('year_prefix')} {d.year} · {t('th_spend')}: €{fmtK(d.totalSpend)}/yr</div>
+                          {delta!==0 && <div style={{fontSize:'9px',marginTop:2,color:delta>0?'var(--teal)':'var(--red)',fontWeight:600}}>{delta>0?'↑':'↓'} {t('surplus_label')} {delta>0?'+':''}€{fmtK(delta)}/yr vs prior event</div>}
+                        </div>
+                        <div style={{textAlign:'right'}}>
+                          <div style={{fontSize:'13px',fontWeight:700,color:d.liquidAssets>=0?'var(--teal)':'var(--red)'}}>€{fmtK(d.liquidAssets)}</div>
+                          <div style={{fontSize:'9px',color:'var(--grey)'}}>{t('liquid_nw_label')}</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+
+          {/* ═══ INSIGHTS — Smart Alerts + Actions ═══ */}
+          {activeTab==='insights' && (()=>{
+            const surplus=monthlySurplus;
+            const emergencyTarget=(baselineSpend||2000)*6;
+            const curLiquid=curData.liquidAssets||0;
+            const emergencyMet=curLiquid>=emergencyTarget;
+            const cashTotal=assets.filter(a=>a.type==='cash').reduce((s,a)=>s+toEUR(a.value,a.ccy||'EUR'),0);
+            const totalLiquid=assets.filter(a=>a.type!=='property').reduce((s,a)=>s+toEUR(a.value,a.ccy||'EUR'),0);
+            const cashPct=totalLiquid>0?Math.round(cashTotal/totalLiquid*100):0;
+            const atRetire=data.find(d=>d.age===retireAge)||{};
+            const negYear=data.find(d=>d.liquidAssets<0);
+            // Build alerts
+            const alerts=[];
+            if(mc.successRate>=80)alerts.push({type:'green',icon:'✅',title:t('ins_strong_pos'),desc:t('ins_strong_desc').replace('{0}',mc.successRate)});
+            if(emergencyMet)alerts.push({type:'green',icon:'🛡️',title:t('ins_emergency_met'),desc:t('ins_emergency_met_desc')});
+            if(mc.successRate>=50&&mc.successRate<80)alerts.push({type:'amber',icon:'⚠️',title:t('ins_mc_below'),desc:t('ins_mc_below_desc').replace('{0}',mc.successRate)});
+            if(cashPct>35&&totalLiquid>10000)alerts.push({type:'amber',icon:'💤',title:t('ins_cash_drag'),desc:t('ins_cash_drag_desc').replace('{0}',fmtK(cashTotal)).replace('{1}',cashPct)});
+            if(totalPtsYou<15)alerts.push({type:'amber',icon:'📋',title:t('ins_pension_low'),desc:t('ins_pension_low_desc').replace('{0}',totalPtsYou.toFixed(1))});
+            if(mc.successRate<50)alerts.push({type:'red',icon:'🚨',title:t('ins_plan_risk'),desc:t('ins_plan_risk_desc').replace('{0}',mc.successRate)});
+            if(!emergencyMet)alerts.push({type:'red',icon:'🆘',title:t('ins_emergency_gap'),desc:t('ins_emergency_gap_desc').replace('{0}',fmtK(emergencyTarget-curLiquid))});
+            if(negYear&&negYear.age<85)alerts.push({type:'red',icon:'📉',title:t('ins_early_depletion'),desc:t('ins_early_depletion_desc').replace('{0}',negYear.age)});
+            // Sort: red first, then amber, then green
+            alerts.sort((a,b)=>{const o={red:0,amber:1,green:2};return o[a.type]-o[b.type];});
+            return(
+              <div>
+                {/* Smart alerts */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:12,color:'var(--teal)'}}>🧠 {t('ins_smart_alerts')}</h3>
+                  {alerts.map((a,i)=>(
+                    <div key={i} className={'alert-card '+a.type}>
+                      <div className="alert-icon">{a.icon}</div>
+                      <div className="alert-content">
+                        <div className="alert-title">{a.title}</div>
+                        <div className="alert-desc">{a.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Buckets */}
+                <div className="card" style={{marginBottom:12}}>
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:10,color:'var(--teal)'}}>🪣 {t('act_buckets')}</h3>
+                  <table>
+                    <thead><tr><th>{t('th_bucket')}</th><th>{t('th_target')}</th><th>{t('status_header')}</th><th>{t('th_purpose')}</th></tr></thead>
+                    <tbody>
+                      <tr><td>🆘 {t('emergency')}</td><td>€{fmtK(emergencyTarget)}</td><td>{emergencyMet?<span className="verdict-yes">✅ {t('met')}</span>:<span className="verdict-no">❌ {t('gap_status')}</span>}</td><td>{t('six_months_exp')}</td></tr>
+                      <tr><td>📈 {t('invest')}</td><td>—</td><td><span className="verdict-maybe">{t('ongoing_status')}</span></td><td>{t('long_term_growth')}</td></tr>
+                      {properties.length>0 && <tr><td>🏠 {t('property_bucket')}</td><td>€{fmtK(properties[0].price*((properties[0].downPct||20)/100+((properties[0].grunderwerbPct||6)+(properties[0].notarPct||1.5)+(properties[0].maklerPct||3.57))/100))}</td><td><span className="verdict-maybe">{t('saving_status')}</span></td><td>{t('down_payment')} + {t('prop_neben_total')}</td></tr>}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Action items */}
+                <div className="card">
+                  <h3 style={{fontSize:'12px',fontWeight:700,marginBottom:10,color:'var(--teal)'}}>✅ {t('act_this_week')}</h3>
+                  <div style={{fontSize:'11px',lineHeight:'2'}}>
+                    {surplus>0 && <div>• {t('action_transfer').replace('{0}',fmt(Math.round(surplus*0.5)))}</div>}
+                    {!emergencyMet && <div>• {t('action_emergency').replace('{0}',fmtK(emergencyTarget-curLiquid))}</div>}
+                    {children.length>0 && children[0].birthYear<=CUR_YR+1 && <div>• {t('action_elterngeld')}</div>}
+                    {totalPtsYou<10 && <div>• {t('action_pension_low').replace('{0}',totalPtsYou.toFixed(1))}</div>}
+                    {mc.successRate<60 && <div>• {t('action_savings_rate')}</div>}
+                    <div>• {t('action_review')}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ═══ METHODOLOGY ═══ */}
+          {activeTab==='methodology' && (
+            <div style={{fontSize:'12px',lineHeight:'1.7',color:'var(--dark)'}}>
+              <h2 style={{fontSize:'16px',fontWeight:700,color:'var(--teal)',marginBottom:12}}>{t('meth_title')}</h2>
+              <p style={{color:'var(--grey)',marginBottom:16}}>{t('meth_intro')}</p>
+
+              {/* Child cost methodology */}
+              <div className="card" style={{marginBottom:14}}>
+                <h3 style={{fontSize:'13px',fontWeight:700,color:'var(--teal)',marginBottom:8}}>👶 {t('meth_child_title')}</h3>
+                <p style={{marginBottom:10}}>{t('meth_child_desc')}</p>
+                <table>
+                  <thead><tr><th>{t('meth_age_range')}</th><th style={{textAlign:'right'}}>{t('meth_monthly_cost')}</th><th>{t('meth_includes')}</th></tr></thead>
+                  <tbody>
+                    <tr><td>0–1</td><td style={{textAlign:'right',fontWeight:600}}>€1,100</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_child_0')}</td></tr>
+                    <tr><td>1–3</td><td style={{textAlign:'right',fontWeight:600}}>€700 + Kita</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_child_1')}</td></tr>
+                    <tr><td>3–6</td><td style={{textAlign:'right',fontWeight:600}}>€750 + Kita</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_child_3')}</td></tr>
+                    <tr><td>6–10</td><td style={{textAlign:'right',fontWeight:600}}>€800</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_child_6')}</td></tr>
+                    <tr><td>10–18</td><td style={{textAlign:'right',fontWeight:600}}>€900</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_child_10')}</td></tr>
+                    <tr><td>18–22</td><td style={{textAlign:'right',fontWeight:600}}>€1,000</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_child_18')}</td></tr>
+                  </tbody>
+                </table>
+                <p style={{marginTop:10,fontSize:'11px',color:'var(--grey)'}}>{t('meth_child_note')}</p>
+              </div>
+
+              {/* Monte Carlo methodology */}
+              <div className="card" style={{marginBottom:14}}>
+                <h3 style={{fontSize:'13px',fontWeight:700,color:'var(--teal)',marginBottom:8}}>🎲 {t('meth_mc_title')}</h3>
+                <p style={{marginBottom:10}}>{t('meth_mc_desc')}</p>
+                <div style={{padding:'10px 12px',background:'var(--light)',borderRadius:8,marginBottom:10}}>
+                  <div style={{fontWeight:600,marginBottom:6}}>{t('meth_mc_how')}</div>
+                  <ol style={{paddingLeft:18,margin:0}}>
+                    <li style={{marginBottom:4}}>{t('meth_mc_step1')}</li>
+                    <li style={{marginBottom:4}}>{t('meth_mc_step2')}</li>
+                    <li style={{marginBottom:4}}>{t('meth_mc_step3')}</li>
+                    <li style={{marginBottom:4}}>{t('meth_mc_step4')}</li>
+                  </ol>
+                </div>
+                <p style={{marginBottom:8}}>{t('meth_mc_vol_title')}</p>
+                <table>
+                  <thead><tr><th>{t('meth_asset_type')}</th><th style={{textAlign:'right'}}>{t('meth_volatility')}</th><th>{t('meth_explanation')}</th></tr></thead>
+                  <tbody>
+                    <tr><td>Cash / Savings</td><td style={{textAlign:'right',fontWeight:600}}>5%</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_vol_cash')}</td></tr>
+                    <tr><td>Bonds</td><td style={{textAlign:'right',fontWeight:600}}>8%</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_vol_bonds')}</td></tr>
+                    <tr><td>ETF / Stocks</td><td style={{textAlign:'right',fontWeight:600}}>15%</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_vol_etf')}</td></tr>
+                    <tr><td>Crypto</td><td style={{textAlign:'right',fontWeight:600}}>50%</td><td style={{fontSize:'11px',color:'var(--grey)'}}>{t('meth_vol_crypto')}</td></tr>
+                  </tbody>
+                </table>
+                <p style={{marginTop:10,fontSize:'11px',color:'var(--grey)'}}>{t('meth_mc_note')}</p>
+              </div>
+
+              {/* Projection methodology */}
+              <div className="card" style={{marginBottom:14}}>
+                <h3 style={{fontSize:'13px',fontWeight:700,color:'var(--teal)',marginBottom:8}}>📈 {t('meth_proj_title')}</h3>
+                <p style={{marginBottom:8}}>{t('meth_proj_desc')}</p>
+                <ul style={{paddingLeft:18,margin:0}}>
+                  <li style={{marginBottom:4}}>{t('meth_proj_1')}</li>
+                  <li style={{marginBottom:4}}>{t('meth_proj_2')}</li>
+                  <li style={{marginBottom:4}}>{t('meth_proj_3')}</li>
+                  <li style={{marginBottom:4}}>{t('meth_proj_4')}</li>
+                  <li style={{marginBottom:4}}>{t('meth_proj_5')}</li>
+                </ul>
+              </div>
+
+              {/* Pension methodology */}
+              <div className="card" style={{marginBottom:14}}>
+                <h3 style={{fontSize:'13px',fontWeight:700,color:'var(--teal)',marginBottom:8}}>🏛️ {t('meth_pension_title')}</h3>
+                <p>{t('meth_pension_desc')}</p>
+              </div>
+
+              {/* Disclaimer */}
+              <div style={{padding:'12px 14px',background:darkMode?'rgba(212,168,67,0.1)':'#fff8e1',borderRadius:8,border:'1px solid '+(darkMode?'rgba(212,168,67,0.3)':'#ffe082')}}>
+                <div style={{fontWeight:700,marginBottom:4,color:'var(--gold)'}}>⚠️ {t('meth_disclaimer_title')}</div>
+                <p style={{fontSize:'11px',color:'var(--grey)',margin:0}}>{t('meth_disclaimer')}</p>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+      {/* Footer */}
+      <div style={{textAlign:'center',padding:16,borderTop:'1px solid var(--border)',color:'var(--grey)',fontSize:11}}>
+        {t('ft_made')} <strong style={{color:'var(--teal)'}}>Tu Anh</strong> · {t('ft_feedback')}
+        <a href="mailto:tangoctuanh27@gmail.com?subject=Money%20Map%20Feedback&body=Hi%20Tu%20Anh%2C%0A%0A" style={{color:'var(--teal)',textDecoration:'none',marginLeft:4}} title="Email me feedback">✉️</a>
+        <a href="https://www.instagram.com/beegeeezz/" target="_blank" style={{color:'var(--teal)',textDecoration:'none',marginLeft:4}} title="DM me on Instagram">📸</a>
+        <a href="https://www.linkedin.com/in/amy-ta/" target="_blank" style={{color:'var(--teal)',textDecoration:'none',marginLeft:4}} title="Connect on LinkedIn">💼</a>
+        <span style={{marginLeft:8}}>·</span>
+        <a href="https://www.paypal.com/paypalme/amytnta" target="_blank" style={{marginLeft:4,color:'#fff',background:'var(--teal)',padding:'2px 8px',borderRadius:4,textDecoration:'none',fontWeight:600,fontSize:10}} title="Buy me a coffee via PayPal">☕ {t('ft_coffee')}</a>
+        <span style={{marginLeft:8,opacity:0.6}}>· Beta v1.0</span>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(<App/>, document.getElementById('root'));
+</script>
+
+</body>
+</html>
